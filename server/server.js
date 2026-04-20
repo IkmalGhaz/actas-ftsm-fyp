@@ -83,6 +83,27 @@ app.get('/api/akademik/:no_matrik', (req, res) => {
     });
 });
 
+// API Endpoint 3: Tambah Kursus & Keputusan Baharu
+app.post('/api/tambah-kursus', (req, res) => {
+    const { no_matrik, kod_kursus, nama_kursus, jam_kredit, kategori, gred, mata_nilaian, semester_diambil } = req.body;
+
+    // Langkah A: Masukkan ke jadual Kursus (IGNORE jika kod_kursus dah wujud)
+    const sqlKursus = "INSERT IGNORE INTO Kursus (kod_kursus, nama_kursus, jam_kredit, kategori) VALUES (?, ?, ?, ?)";
+    
+    db.query(sqlKursus, [kod_kursus, nama_kursus, jam_kredit, kategori], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Langkah B: Masukkan gred ke jadual Keputusan
+        const sqlKeputusan = "INSERT INTO Keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES (?, ?, ?, ?, ?)";
+        
+        db.query(sqlKeputusan, [no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil], (err2) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            
+            res.status(200).json({ message: "Data keputusan berjaya ditambah!" });
+        });
+    });
+});
+
 // Hidupkan server pada Port 5000
 app.listen(5000, () => {
     console.log('🚀 Server Backend ACTAS berjalan di port 5000');

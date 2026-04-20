@@ -47,9 +47,22 @@ function Dashboard() {
                         <h1 className="text-2xl font-bold">Papan Pemuka Prestasi</h1>
                         <p className="text-gray-500">Selamat datang, <span className="text-blue-600 font-semibold">{user.nama}</span></p>
                     </div>
-                    <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-all">
-                        Log Keluar
-                    </button>
+                    
+                    {/* INI BAHAGIAN BUTANG YANG BARU (DAFTAR KURSUS & LOG KELUAR) */}
+                    <div className="flex space-x-3">
+                        <button 
+                            onClick={() => navigate('/tambah-kursus')} 
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm"
+                        >
+                            + Daftar Kursus
+                        </button>
+                        <button 
+                            onClick={handleLogout} 
+                            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-all"
+                        >
+                            Log Keluar
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? (
