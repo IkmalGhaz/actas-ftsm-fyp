@@ -56,6 +56,12 @@ function Dashboard() {
                         >
                             + Daftar Kursus
                         </button>
+                        <button
+                            onClick={() => navigate('/simulator')}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all shadow-sm"
+                        >
+                            Simulator PNGK
+                        </button>
                         <button 
                             onClick={handleLogout} 
                             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-all"
