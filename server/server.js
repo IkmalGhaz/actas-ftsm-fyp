@@ -8,7 +8,8 @@ app.use(express.json());
 
 // Sambungan ke Pangkalan Data (XAMPP MySQL)
 const db = mysql.createConnection({
-    host: 'localhost',
+    host: '127.0.0.1',
+    port: 3306,
     user: 'root', // username default XAMPP
     password: '', // password default XAMPP (kosongkan)
     database: 'actas_db'
