@@ -17,13 +17,22 @@ function Login() {
             
             if (response.status === 200) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
-                navigate('/dashboard');
+                if (response.data.user.role === 'kp') {
+                    navigate('/kp/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         } catch (error) {
             // For demo purpose, if backend is down or fails, bypass login
             if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-                localStorage.setItem('user', JSON.stringify({ nama: 'Ahmad Aliff', no_matrik: 'A123456' }));
-                navigate('/dashboard');
+                if (noMatrik.toUpperCase().startsWith('KP')) {
+                    localStorage.setItem('user', JSON.stringify({ nama: 'Dr. Rodziah', no_matrik: noMatrik, role: 'kp' }));
+                    navigate('/kp/dashboard');
+                } else {
+                    localStorage.setItem('user', JSON.stringify({ nama: 'Ahmad Aliff', no_matrik: noMatrik || 'A123456', role: 'pelajar' }));
+                    navigate('/dashboard');
+                }
             } else {
                 alert(error.response?.data?.message || "Pelayan bermasalah");
             }
@@ -63,12 +72,12 @@ function Login() {
                     
                     <form className="mt-10 space-y-6" onSubmit={handleLogin}>
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">No. Matrik / ID Pengguna</label>
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Nombor Matrik / UKMPer / Pengenalan</label>
                             <input
                                 type="text"
                                 required
                                 className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
-                                placeholder="Masukkan No. Matrik / ID"
+                                placeholder="Cth: KP12345 (Ketua Program) atau A12345 (Pelajar)"
                                 value={noMatrik}
                                 onChange={(e) => setNoMatrik(e.target.value)}
                             />
