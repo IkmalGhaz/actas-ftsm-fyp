@@ -82,7 +82,7 @@ function Login() {
                                 type="text"
                                 required
                                 className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
-                                placeholder="Cth: A123 (Pelajar), KP123 (KP), P123 (Pegawai)"
+                                placeholder="Cth: KP12345 (Ketua Program) atau A12345 (Pelajar)"
                                 value={noMatrik}
                                 onChange={(e) => setNoMatrik(e.target.value)}
                             />
