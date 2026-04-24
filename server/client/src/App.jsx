@@ -10,6 +10,9 @@ import DashboardKP from './DashboardKP';
 import PantauKursus from './PantauKursus';
 import AnalisisGred from './AnalisisGred';
 import MaklumBalasKP from './MaklumBalasKP';
+import JanaLaporan from './JanaLaporan';
+import UrusDataPelajar from './UrusDataPelajar';
+import KonfigurasiSistem from './KonfigurasiSistem';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -39,6 +42,11 @@ function App() {
                     <Route path="/kp/pantau-kursus" element={<ProtectedRoute><PantauKursus /></ProtectedRoute>} />
                     <Route path="/kp/analisis-gred" element={<ProtectedRoute><AnalisisGred /></ProtectedRoute>} />
                     <Route path="/kp/maklum-balas" element={<ProtectedRoute><MaklumBalasKP /></ProtectedRoute>} />
+
+                    {/* Pegawai Routes */}
+                    <Route path="/pegawai/jana-laporan" element={<ProtectedRoute><JanaLaporan /></ProtectedRoute>} />
+                    <Route path="/pegawai/urus-pelajar" element={<ProtectedRoute><UrusDataPelajar /></ProtectedRoute>} />
+                    <Route path="/pegawai/tetapan" element={<ProtectedRoute><KonfigurasiSistem /></ProtectedRoute>} />
                 </Routes>
             </div>
         </Router>

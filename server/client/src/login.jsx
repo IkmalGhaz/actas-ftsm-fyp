@@ -19,6 +19,8 @@ function Login() {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
                 if (response.data.user.role === 'kp') {
                     navigate('/kp/dashboard');
+                } else if (response.data.user.role === 'pegawai') {
+                    navigate('/pegawai/jana-laporan');
                 } else {
                     navigate('/dashboard');
                 }
@@ -29,6 +31,9 @@ function Login() {
                 if (noMatrik.toUpperCase().startsWith('KP')) {
                     localStorage.setItem('user', JSON.stringify({ nama: 'Dr. Rodziah', no_matrik: noMatrik, role: 'kp' }));
                     navigate('/kp/dashboard');
+                } else if (noMatrik.toUpperCase().startsWith('P')) {
+                    localStorage.setItem('user', JSON.stringify({ nama: 'En. Afiq', no_matrik: noMatrik, role: 'pegawai' }));
+                    navigate('/pegawai/jana-laporan');
                 } else {
                     localStorage.setItem('user', JSON.stringify({ nama: 'Ahmad Aliff', no_matrik: noMatrik || 'A123456', role: 'pelajar' }));
                     navigate('/dashboard');
@@ -77,7 +82,7 @@ function Login() {
                                 type="text"
                                 required
                                 className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
-                                placeholder="Cth: KP12345 (Ketua Program) atau A12345 (Pelajar)"
+                                placeholder="Cth: A123 (Pelajar), KP123 (KP), P123 (Pegawai)"
                                 value={noMatrik}
                                 onChange={(e) => setNoMatrik(e.target.value)}
                             />

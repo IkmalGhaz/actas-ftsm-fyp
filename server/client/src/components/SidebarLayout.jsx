@@ -8,7 +8,10 @@ import {
     LogOut,
     GraduationCap,
     MonitorPlay,
-    MessageSquare
+    MessageSquare,
+    FileText,
+    Users,
+    Settings
 } from 'lucide-react';
 
 export default function SidebarLayout({ children }) {
@@ -16,6 +19,7 @@ export default function SidebarLayout({ children }) {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user')) || { nama: 'Pengguna', no_matrik: 'A000000', role: 'pelajar' };
     const isKP = user.role === 'kp';
+    const isPegawai = user.role === 'pegawai';
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -37,19 +41,52 @@ export default function SidebarLayout({ children }) {
         { name: 'Maklum Balas', path: '/kp/maklum-balas', icon: MessageSquare },
     ];
 
-    const navItems = isKP ? kpNavItems : studentNavItems;
+    const pegawaiNavItems = [
+        { name: 'Jana Laporan', path: '/pegawai/jana-laporan', icon: FileText },
+        { name: 'Urus Data Pelajar', path: '/pegawai/urus-pelajar', icon: Users },
+        { name: 'Tetapan Sistem', path: '/pegawai/tetapan', icon: Settings },
+    ];
+
+    let navItems = studentNavItems;
+    let sidebarBgClass = 'bg-[#0B1536] text-white';
+    let linkActiveClass = 'bg-blue-500 border-l-4 border-blue-600 text-white shadow-sm mx-2 rounded-lg';
+    let linkInactiveClass = 'text-gray-400 hover:bg-[#15234B] hover:text-white border-l-4 border-transparent';
+    let iconActiveClass = 'text-white';
+    let iconInactiveClass = 'text-gray-400';
+    let headerTextClass = 'text-white';
+    let headerIconBg = 'bg-blue-500';
+    let headerIconText = 'text-white';
+
+    if (isKP) {
+        navItems = kpNavItems;
+        sidebarBgClass = 'bg-[#EBF0FF] text-gray-700';
+        linkActiveClass = 'bg-blue-500 border-l-4 border-blue-600 text-white shadow-sm mx-2 rounded-lg';
+        linkInactiveClass = 'text-gray-600 hover:bg-blue-100 hover:text-blue-700 border-l-4 border-transparent';
+        iconInactiveClass = 'text-gray-500';
+        headerTextClass = 'text-blue-600';
+    } else if (isPegawai) {
+        navItems = pegawaiNavItems;
+        sidebarBgClass = 'bg-gradient-to-b from-blue-100 to-white text-gray-700 border-r border-blue-100';
+        linkActiveClass = 'bg-white text-blue-600 shadow-sm mx-4 rounded-xl font-bold';
+        linkInactiveClass = 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600 border-l-4 border-transparent mx-4 rounded-xl';
+        iconActiveClass = 'text-blue-600';
+        iconInactiveClass = 'text-gray-500';
+        headerTextClass = 'text-gray-900';
+        headerIconBg = 'bg-gray-900';
+        headerIconText = 'text-white';
+    }
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
             {/* Sidebar */}
-            <aside className={`w-64 flex flex-col justify-between hidden md:flex ${isKP ? 'bg-[#EBF0FF] text-gray-700' : 'bg-[#0B1536] text-white'}`}>
+            <aside className={`w-64 flex flex-col justify-between hidden md:flex ${sidebarBgClass}`}>
                 <div>
                     <div className="p-6 flex items-center space-x-3 mb-6">
-                        <div className="bg-blue-500 p-2 rounded-lg shadow-sm">
-                            <GraduationCap size={24} className="text-white" />
+                        <div className={`${headerIconBg} p-2 rounded-lg shadow-sm`}>
+                            <GraduationCap size={24} className={headerIconText} />
                         </div>
-                        <h1 className={`text-xl font-bold tracking-wider ${isKP ? 'text-blue-600' : 'text-white'}`}>
-                            ACTAS-FTSM {isKP && 'KP'}
+                        <h1 className={`text-xl font-bold tracking-wider ${headerTextClass}`}>
+                            {isKP ? 'ACTAS-FTSM KP' : (isPegawai ? 'Pegawai FTSM' : 'ACTAS-FTSM')}
                         </h1>
                     </div>
                     
@@ -60,15 +97,11 @@ export default function SidebarLayout({ children }) {
                                 <Link
                                     key={item.name}
                                     to={item.path}
-                                    className={`flex items-center px-6 py-3.5 space-x-4 transition-colors font-medium text-sm ${
-                                        isActive 
-                                        ? 'bg-blue-500 border-l-4 border-blue-600 text-white shadow-sm mx-2 rounded-lg' 
-                                        : isKP 
-                                            ? 'text-gray-600 hover:bg-blue-100 hover:text-blue-700 border-l-4 border-transparent'
-                                            : 'text-gray-400 hover:bg-[#15234B] hover:text-white border-l-4 border-transparent'
+                                    className={`flex items-center px-4 py-3.5 space-x-4 transition-colors font-medium text-sm ${
+                                        isActive ? linkActiveClass : linkInactiveClass
                                     }`}
                                 >
-                                    <item.icon size={20} className={isActive ? "text-white" : (isKP ? "text-gray-500" : "text-gray-400")} />
+                                    <item.icon size={20} className={isActive ? iconActiveClass : iconInactiveClass} />
                                     <span>{item.name}</span>
                                 </Link>
                             );
@@ -80,7 +113,7 @@ export default function SidebarLayout({ children }) {
                     <button 
                         onClick={handleLogout}
                         className={`flex items-center w-full px-4 py-3 space-x-3 rounded-lg transition-colors font-medium text-sm ${
-                            isKP 
+                            isKP || isPegawai
                             ? 'text-gray-600 hover:text-blue-700 hover:bg-blue-100' 
                             : 'text-gray-400 hover:text-white hover:bg-[#15234B]'
                         }`}
@@ -98,7 +131,7 @@ export default function SidebarLayout({ children }) {
                     <div className="flex items-center space-x-4">
                         <div className="text-right">
                             <p className="text-sm font-bold text-gray-800">{user.nama}</p>
-                            <p className="text-xs text-gray-500 font-medium">{isKP ? 'Ketua Program' : user.no_matrik}</p>
+                            <p className="text-xs text-gray-500 font-medium">{isKP ? 'Ketua Program' : (isPegawai ? 'Pegawai FTSM' : user.no_matrik)}</p>
                         </div>
                         <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">
                             {user.nama.charAt(0)}
