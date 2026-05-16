@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Calculator } from 'lucide-react';
+import axios from 'axios';
 
 function Simulator() {
     const user = JSON.parse(localStorage.getItem('user'));
     
-    // Data akademik asal
+    // State dinamik untuk pangkalan data
     const [currentStats, setCurrentStats] = useState({
-        cgpa: 3.46,
-        totalCredits: 90 
+        cgpa: 0.00,
+        totalCredits: 0 
     });
+    const [loading, setLoading] = useState(true);
 
     const [simulatedCourses, setSimulatedCourses] = useState([]);
     const [newCourse, setNewCourse] = useState({ name: '', credits: 3, grade: 'A' });
@@ -18,8 +20,28 @@ function Simulator() {
         'B-': 2.67, 'C+': 2.33, 'C': 2.00, 'D': 1.00, 'E': 0.00 
     };
 
+    // Tarik data PNGK & Kredit Sebenar dari MySQL
+    useEffect(() => {
+        const fetchAkademikData = async () => {
+            if (!user) return;
+            try {
+                const response = await axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`);
+                setCurrentStats({
+                    cgpa: parseFloat(response.data.pngk_semasa) || 0.00,
+                    totalCredits: parseInt(response.data.jumlah_kredit) || 0
+                });
+            } catch (error) {
+                console.error("Gagal menarik data untuk simulator:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAkademikData();
+    }, [user]);
+
     const addCourse = () => {
-        if (!newCourse.name) return alert("Masukkan nama subjek");
+        if (!newCourse.name) return alert("Sila masukkan nama subjek terlebih dahulu");
         setSimulatedCourses([...simulatedCourses, { ...newCourse, id: Date.now() }]);
         setNewCourse({ name: '', credits: 3, grade: 'A' });
     };
@@ -29,6 +51,8 @@ function Simulator() {
     };
 
     const calculateNewCgpa = () => {
+        if (currentStats.totalCredits === 0 && simulatedCourses.length === 0) return "0.00";
+
         const currentTotalPoints = currentStats.cgpa * currentStats.totalCredits;
         let simulatedPoints = 0;
         let simulatedCredits = 0;
@@ -38,9 +62,20 @@ function Simulator() {
             simulatedCredits += parseInt(c.credits);
         });
 
-        const finalCgpa = (currentTotalPoints + simulatedPoints) / (currentStats.totalCredits + simulatedCredits);
-        return isNaN(finalCgpa) ? currentStats.cgpa.toFixed(2) : finalCgpa.toFixed(2);
+        const totalCreditsNow = currentStats.totalCredits + simulatedCredits;
+        if (totalCreditsNow === 0) return "0.00";
+
+        const finalCgpa = (currentTotalPoints + simulatedPoints) / totalCreditsNow;
+        return finalCgpa.toFixed(2);
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-10">
@@ -48,7 +83,7 @@ function Simulator() {
                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                     <Calculator className="text-blue-500" /> Simulator PNGK
                 </h1>
-                <p className="text-gray-500 mt-2">Ramal keputusan semester akan datang anda.</p>
+                <p className="text-gray-500 mt-2">Ramal keputusan semester akan datang anda secara masa nyata.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,14 +94,14 @@ function Simulator() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nama Subjek</label>
-                                <input type="text" placeholder="Contoh: Rangkaian Komputer" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50/50" 
+                                <input type="text" placeholder="Contoh: Kejuruteraan Perisian" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50/50" 
                                     value={newCourse.name} onChange={(e) => setNewCourse({...newCourse, name: e.target.value})} />
                             </div>
                             
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Kredit</label>
                                 <select className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50/50"
-                                    value={newCourse.credits} onChange={(e) => setNewCourse({...newCourse, credits: e.target.value})}>
+                                    value={newCourse.credits} onChange={(e) => setNewCourse({...newCourse, credits: Number(e.target.value)})}>
                                     {[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Kredit</option>)}
                                 </select>
                             </div>
@@ -95,9 +130,9 @@ function Simulator() {
                         </div>
                         <div className="text-right">
                             <p className="text-blue-200 text-xs font-medium">PNGK Semasa</p>
-                            <p className="text-2xl font-bold">{currentStats.cgpa}</p>
+                            <p className="text-2xl font-bold">{currentStats.cgpa.toFixed(2)}</p>
                             <div className="h-px bg-blue-500 my-2 opacity-50"></div>
-                            <p className="text-blue-200 text-xs font-medium">Total Kredit Semasa</p>
+                            <p className="text-blue-200 text-xs font-medium">Kredit Terkumpul</p>
                             <p className="text-lg font-semibold">{currentStats.totalCredits}</p>
                         </div>
                     </div>
