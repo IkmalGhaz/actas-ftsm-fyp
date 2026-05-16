@@ -149,6 +149,61 @@ function Dashboard() {
                             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
                             <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">GPA</span>
                         </div>
+                        
+                        {/* Jadual Rekod Kursus Section */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">Rekod Keputusan Akademik</h3>
+                            <button 
+                                onClick={() => navigate('/tambah-kursus')} 
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm"
+                            >
+                                + Daftar Kursus
+                            </button>
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                        <th className="p-4 rounded-tl-lg font-semibold">Kod Kursus</th>
+                                        <th className="p-4 font-semibold">Nama Kursus</th>
+                                        <th className="p-4 font-semibold text-center">Kredit</th>
+                                        <th className="p-4 font-semibold text-center">Semester</th>
+                                        <th className="p-4 rounded-tr-lg font-semibold text-center">Gred</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+                                    {dataAkademik?.senarai_keputusan?.map((subjek, index) => (
+                                        <tr key={index} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="p-4 font-bold text-blue-600">{subjek.kod_kursus}</td>
+                                            <td className="p-4 font-medium">{subjek.nama_kursus}</td>
+                                            <td className="p-4 text-center">{subjek.jam_kredit}</td>
+                                            <td className="p-4 text-center">Sem {subjek.semester_diambil}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-3 py-1 rounded-md font-extrabold text-xs inline-block min-w-[40px] text-center ${
+                                                    subjek.gred.startsWith('A') ? 'bg-emerald-100 text-emerald-700' :
+                                                    subjek.gred.startsWith('B') ? 'bg-blue-100 text-blue-700' :
+                                                    subjek.gred.startsWith('C') ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-red-100 text-red-700'
+                                                }`}>
+                                                    {subjek.gred}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    
+                                    {(!dataAkademik?.senarai_keputusan || dataAkademik.senarai_keputusan.length === 0) && (
+                                        <tr>
+                                            <td colSpan="5" className="p-10 text-center text-gray-400 font-medium">
+                                                Tiada rekod kursus dijumpai. Sila daftar kursus baharu.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     </div>
                 </>
             )}
