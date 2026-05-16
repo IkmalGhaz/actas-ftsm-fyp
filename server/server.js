@@ -118,18 +118,18 @@ app.get('/api/akademik/:no_matrik', (req, res) => {
     });
 });
 
-// API Endpoint 3: Tambah Kursus & Keputusan Baharu
+// API Endpoint 3: Tambah Kursus & Keputusan Baharu secara Dinamik
 app.post('/api/tambah-kursus', (req, res) => {
     const { no_matrik, kod_kursus, nama_kursus, jam_kredit, kategori, gred, mata_nilaian, semester_diambil } = req.body;
 
-    // Langkah A: Masukkan ke jadual Kursus (IGNORE jika kod_kursus dah wujud)
-    const sqlKursus = "INSERT IGNORE INTO Kursus (kod_kursus, nama_kursus, jam_kredit, kategori) VALUES (?, ?, ?, ?)";
+    // Langkah A: Masukkan ke jadual Kursus (IGNORE jika kod_kursus dah wujud dalam Master Data Universiti)
+    const sqlKursus = "INSERT IGNORE INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori) VALUES (?, ?, ?, ?)";
     
     db.query(sqlKursus, [kod_kursus, nama_kursus, jam_kredit, kategori], (err) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        // Langkah B: Masukkan gred ke jadual Keputusan
-        const sqlKeputusan = "INSERT INTO Keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES (?, ?, ?, ?, ?)";
+        // Langkah B: Masukkan gred ke jadual Keputusan (Ikat pelajar dengan kursus tersebut)
+        const sqlKeputusan = "INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES (?, ?, ?, ?, ?)";
         
         db.query(sqlKeputusan, [no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil], (err2) => {
             if (err2) return res.status(500).json({ error: err2.message });
