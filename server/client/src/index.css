@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  body { background-color: white !important; }
+  .print\:hidden { display: none !important; }
+  .print\:block { display: block !important; }
+  /* Sembunyikan sidebar masa print */
+  aside, nav { display: none !important; }
+}
