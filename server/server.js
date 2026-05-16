@@ -20,22 +20,56 @@ db.connect((err) => {
     console.log('✅ Berjaya sambung ke MySQL (actas_db)!');
 });
 
-// API Endpoint 1: Log Masuk
+// API Endpoint 1: Log Masuk Dinamik (Pelajar, KP, dan Pegawai)
 app.post('/api/login', (req, res) => {
     const { no_matrik, katalaluan } = req.body;
     
-    // Cari pelajar dalam database
-    const sql = "SELECT * FROM Pelajar WHERE no_matrik = ? AND katalaluan = ?";
+    // 1. Cuba cari dalam jadual pelajar terlebih dahulu
+    const sqlPelajar = "SELECT * FROM pelajar WHERE no_matrik = ? AND katalaluan = ?";
     
-    db.query(sql, [no_matrik, katalaluan], (err, result) => {
+    db.query(sqlPelajar, [no_matrik, katalaluan], (err, resultPelajar) => {
         if (err) return res.status(500).json({ error: err.message });
         
-        // Jika data wujud
-        if (result.length > 0) {
-            res.status(200).json({ message: "Log Masuk Berjaya!", user: result[0] });
-        } else {
-            res.status(401).json({ message: "ID Pelajar atau Kata Laluan salah!" });
+        // Jika dijumpai dalam jadual pelajar
+        if (resultPelajar.length > 0) {
+            const user = {
+                no_matrik: resultPelajar[0].no_matrik,
+                nama: resultPelajar[0].nama,
+                program: resultPelajar[0].program,
+                role: 'pelajar' // Beritahu React ini adalah pelajar
+            };
+            return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user });
         }
+        
+        // 2. Jika tidak jumpa dalam jadual pelajar, cari dalam jadual KAKITANGAN (UKMPer)
+        const sqlKakitangan = "SELECT * FROM kakitangan WHERE id_ukmper = ? AND katalaluan = ?";
+        
+        db.query(sqlKakitangan, [no_matrik, katalaluan], (errKakitangan, resultKakitangan) => {
+            if (errKakitangan) return res.status(500).json({ error: errKakitangan.message });
+            
+            // Jika dijumpai dalam jadual kakitangan
+            if (resultKakitangan.length > 0) {
+                // Tentukan peranan ('kp' atau 'pegawai') berdasarkan data lajur 'peranan'
+                let penentuRole = 'pegawai'; // Default
+                
+                if (resultKakitangan[0].peranan === 'Ketua Program') {
+                    penentuRole = 'kp';
+                } else if (resultKakitangan[0].peranan === 'Pegawai FTSM') {
+                    penentuRole = 'pegawai';
+                }
+                
+                const user = {
+                    no_matrik: resultKakitangan[0].id_ukmper, // Guna ID UKMPer
+                    nama: resultKakitangan[0].nama,
+                    program: resultKakitangan[0].peranan,
+                    role: penentuRole // Beritahu React peranan spesifik kakitangan ini
+                };
+                return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKakitangan[0].peranan}!`, user });
+            }
+            
+            // 3. Jika kedua-dua jadual langsung tak jumpa data
+            return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
+        });
     });
 });
 
