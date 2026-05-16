@@ -139,6 +139,101 @@ app.post('/api/tambah-kursus', (req, res) => {
     });
 });
 
+// ===================================================================
+// API KHAS KETUA PROGRAM (KP)
+// ===================================================================
+
+// API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
+app.get('/api/kp/analitik-pelajar', (req, res) => {
+    // Tarik semua pelajar berserta gred mereka
+    const sql = `
+        SELECT 
+            p.no_matrik, p.nama, p.program,
+            k.jam_kredit, kp.mata_nilaian
+        FROM pelajar p
+        LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
+        LEFT JOIN kursus k ON kp.kod_kursus = k.kod_kursus
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Kumpulan data mengikut pelajar (No Matrik)
+        const pelajarMap = {};
+
+        results.forEach(row => {
+            if (!pelajarMap[row.no_matrik]) {
+                pelajarMap[row.no_matrik] = {
+                    no_matrik: row.no_matrik,
+                    nama: row.nama,
+                    program: row.program,
+                    totalMata: 0,
+                    totalKredit: 0
+                };
+            }
+            
+            if (row.jam_kredit && row.mata_nilaian) {
+                pelajarMap[row.no_matrik].totalMata += (parseFloat(row.mata_nilaian) * parseInt(row.jam_kredit));
+                pelajarMap[row.no_matrik].totalKredit += parseInt(row.jam_kredit);
+            }
+        });
+
+        // Kira CGPA untuk setiap pelajar dan kumpulkan statistik
+        let totalCgpaSemua = 0;
+        let pelajarCount = 0;
+        let senaraiPelajar = [];
+
+        Object.values(pelajarMap).forEach(p => {
+            p.cgpa = p.totalKredit > 0 ? (p.totalMata / p.totalKredit).toFixed(2) : "0.00";
+            senaraiPelajar.push(p);
+            
+            if (p.totalKredit > 0) {
+                totalCgpaSemua += parseFloat(p.cgpa);
+                pelajarCount++;
+            }
+        });
+
+        const purataCgpaFakulti = pelajarCount > 0 ? (totalCgpaSemua / pelajarCount).toFixed(2) : "0.00";
+
+        res.status(200).json({
+            status: "Berjaya",
+            jumlah_pelajar: Object.keys(pelajarMap).length,
+            purata_cgpa_fakulti: purataCgpaFakulti,
+            senarai_pelajar: senaraiPelajar
+        });
+    });
+});
+
+// API Endpoint 5: Pantau Prestasi Mengikut Kursus (Untuk KP)
+app.get('/api/kp/pantau-kursus', (req, res) => {
+    // Gabungkan jadual kursus dan keputusan, kemudian kira statistik
+    const sql = `
+        SELECT 
+            k.kod_kursus, 
+            k.nama_kursus, 
+            k.kategori,
+            k.jam_kredit,
+            COUNT(kp.no_matrik) AS jumlah_pelajar,
+            AVG(kp.mata_nilaian) AS purata_mata
+        FROM kursus k
+        LEFT JOIN keputusan kp ON k.kod_kursus = kp.kod_kursus
+        GROUP BY k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit
+        ORDER BY purata_mata DESC
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Bersihkan data (jika purata_mata null sebab tiada pelajar ambil)
+        const cleanResults = results.map(kursus => ({
+            ...kursus,
+            purata_mata: kursus.purata_mata ? parseFloat(kursus.purata_mata).toFixed(2) : "0.00"
+        }));
+
+        res.status(200).json(cleanResults);
+    });
+});
+
 // Hidupkan server pada Port 5000
 app.listen(5000, () => {
     console.log('🚀 Server Backend ACTAS berjalan di port 5000');

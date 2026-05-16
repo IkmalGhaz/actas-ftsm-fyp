@@ -1,117 +1,162 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ArrowUpRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Users, TrendingUp, Award, BookOpen } from 'lucide-react';
 
-export default function DashboardKP() {
-    // Mock Data based on the UI
-    const gradeData = [
-        { name: 'A', value: 35 },
-        { name: 'B', value: 50 },
-        { name: 'C', value: 25 },
-        { name: 'D', value: 8 },
-        { name: 'E', value: 2 },
-    ];
+function DashboardKP() {
+    const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('user'));
+    
+    const [kpData, setKpData] = useState({
+        jumlah_pelajar: 0,
+        purata_cgpa_fakulti: "0.00",
+        senarai_pelajar: []
+    });
+    const [loading, setLoading] = useState(true);
 
-    const atRiskStudents = [
-        { name: 'Ahmad Bin Ali', grade: 'D', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
-        { name: 'Siti Nurhaliza', grade: 'C-', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704e' },
-        { name: 'Chong Wei', grade: 'D+', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704f' },
-    ];
+    useEffect(() => {
+        // Keselamatan: Pastikan hanya KP sahaja yang boleh masuk halaman ini
+        if (!user || user.role !== 'kp') {
+            navigate('/');
+            return;
+        }
 
-    const courseList = [
-        { code: 'CSC101', name: 'Pengenalan Pengaturcaraan', credit: 3, students: 45 },
-        { code: 'MTH201', name: 'Kalkulus Lanjutan', credit: 4, students: 30 },
-        { code: 'ENG302', name: 'Kejuruteraan Perisian', credit: 3, students: 45 }
-    ];
+        const fetchAnalitikFakulti = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/kp/analitik-pelajar');
+                setKpData(response.data);
+            } catch (error) {
+                console.error("Gagal menarik data analitik KP:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAnalitikFakulti();
+    }, [user, navigate]);
+
+    if (!user) return null;
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
+            {/* Header KP */}
             <div>
-                <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Papan Pemuka Ketua Program</h1>
-                <p className="text-gray-500 font-medium">Program Kejuruteraan Perisian</p>
+                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Papan Pemuka Ketua Program</h1>
+                <p className="text-gray-500 mt-2 font-medium">Selamat datang, {user.nama}. Berikut adalah analitik keseluruhan prestasi pelajar.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <p className="text-gray-600 font-bold mb-4">Kursus Diajar</p>
-                    <p className="text-4xl font-black text-gray-900">3</p>
+            {loading ? (
+                <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <p className="text-gray-600 font-bold mb-4">Jumlah Pelajar</p>
-                    <p className="text-4xl font-black text-gray-900">120</p>
-                </div>
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
-                    <p className="text-gray-600 font-bold mb-4">Purata Gred Kelas</p>
-                    <div className="flex items-end gap-3">
-                        <p className="text-4xl font-black text-gray-900">3.42</p>
-                        <div className="flex items-center text-emerald-500 font-bold mb-1">
-                            <ArrowUpRight size={20} strokeWidth={3} />
+            ) : (
+                <>
+                    {/* Ringkasan Analitik Helang (Helicopter View) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Kad 1: Jumlah Pelajar */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div className="p-4 bg-blue-50 text-blue-600 rounded-xl">
+                                <Users size={32} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Jumlah Pelajar</p>
+                                <p className="text-3xl font-extrabold text-gray-900">{kpData.jumlah_pelajar}</p>
+                            </div>
+                        </div>
+
+                        {/* Kad 2: Purata PNGK Fakulti */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl">
+                                <TrendingUp size={32} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Purata PNGK</p>
+                                <p className="text-3xl font-extrabold text-emerald-600">{kpData.purata_cgpa_fakulti}</p>
+                            </div>
+                        </div>
+
+                        {/* Kad 3: Status Pemantauan */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div className="p-4 bg-purple-50 text-purple-600 rounded-xl">
+                                <Award size={32} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Pelajar Cemerlang</p>
+                                <p className="text-3xl font-extrabold text-gray-900">
+                                    {kpData.senarai_pelajar.filter(p => parseFloat(p.cgpa) >= 3.67).length}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Kad 4: Perlukan Perhatian */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div className="p-4 bg-red-50 text-red-600 rounded-xl">
+                                <BookOpen size={32} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Perlu Perhatian</p>
+                                <p className="text-3xl font-extrabold text-red-600">
+                                    {kpData.senarai_pelajar.filter(p => parseFloat(p.cgpa) < 2.00).length}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-900 mb-8">Taburan Gred Pelajar</h3>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={gradeData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barSize={40}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 600}} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 600}} ticks={[0, 15, 30, 45, 60]} />
-                                <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    {/* Jadual Senarai Pelajar FTSM */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">Senarai Prestasi Pelajar</h3>
+                            <button className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">
+                                Muat Turun Laporan (CSV)
+                            </button>
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                        <th className="p-4 rounded-tl-lg font-semibold">No. Matrik</th>
+                                        <th className="p-4 font-semibold">Nama Pelajar</th>
+                                        <th className="p-4 font-semibold">Program</th>
+                                        <th className="p-4 font-semibold text-center">Kredit Terkumpul</th>
+                                        <th className="p-4 rounded-tr-lg font-semibold text-center">PNGK</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+                                    {kpData.senarai_pelajar.map((pelajar, index) => (
+                                        <tr key={index} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="p-4 font-bold text-blue-600">{pelajar.no_matrik}</td>
+                                            <td className="p-4 font-medium">{pelajar.nama}</td>
+                                            <td className="p-4 text-gray-500">{pelajar.program}</td>
+                                            <td className="p-4 text-center font-medium">{pelajar.totalKredit}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-3 py-1 rounded-md font-extrabold text-xs inline-block min-w-[50px] text-center ${
+                                                    parseFloat(pelajar.cgpa) >= 3.67 ? 'bg-emerald-100 text-emerald-700' :
+                                                    parseFloat(pelajar.cgpa) >= 3.00 ? 'bg-blue-100 text-blue-700' :
+                                                    parseFloat(pelajar.cgpa) >= 2.00 ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-red-100 text-red-700'
+                                                }`}>
+                                                    {pelajar.cgpa}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    
+                                    {kpData.senarai_pelajar.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-10 text-center text-gray-400 font-medium">
+                                                Tiada rekod pelajar dijumpai di dalam pangkalan data.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-
-                <div className="lg:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-900 mb-6">Pelajar Berisiko</h3>
-                    <div className="space-y-4">
-                        {atRiskStudents.map((student, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-colors">
-                                <div className="flex items-center space-x-4">
-                                    <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full object-cover" />
-                                    <div>
-                                        <p className="font-bold text-gray-800 text-sm">{student.name}</p>
-                                        <p className="text-xs text-gray-500 font-medium mt-0.5">Gred: {student.grade}</p>
-                                    </div>
-                                </div>
-                                <button className="px-4 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all">
-                                    Lihat
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-6">Senarai Kursus Semester Ini</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="border-b border-gray-100">
-                            <tr>
-                                <th className="px-4 py-4 text-xs font-bold text-gray-500">Kod Kursus</th>
-                                <th className="px-4 py-4 text-xs font-bold text-gray-500">Nama Kursus</th>
-                                <th className="px-4 py-4 text-xs font-bold text-gray-500 text-center">Jam Kredit</th>
-                                <th className="px-4 py-4 text-xs font-bold text-gray-500 text-center">Bilangan Pelajar</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {courseList.map((course, idx) => (
-                                <tr key={idx} className="hover:bg-gray-50/50">
-                                    <td className="px-4 py-4 font-semibold text-gray-800 text-sm">{course.code}</td>
-                                    <td className="px-4 py-4 text-gray-600 text-sm font-medium">{course.name}</td>
-                                    <td className="px-4 py-4 text-center text-gray-600 text-sm font-medium">{course.credit}</td>
-                                    <td className="px-4 py-4 text-center text-gray-600 text-sm font-medium">{course.students}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 }
+
+export default DashboardKP;
