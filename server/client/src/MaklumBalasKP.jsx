@@ -48,20 +48,31 @@ function MaklumBalasKP() {
 
         setStatusHantar('Menghantar...');
         try {
-            await axios.post('http://localhost:5000/api/kp/maklum-balas', {
+            // Pastikan URL API adalah tepat: http://localhost:5000/api/kp/maklum-balas
+            const response = await axios.post('http://localhost:5000/api/kp/maklum-balas', {
                 no_matrik: pelajarDipilih.no_matrik,
                 mesej: mesej
             });
+            
             alert(`Mesej berjaya dihantar kepada ${pelajarDipilih.nama}!`);
             setMesej('');
             setPelajarDipilih(null);
             setStatusHantar('');
         } catch (error) {
-            alert("Ralat menghantar mesej.");
+            console.error("Ralat menghantar mesej:", error);
+            
+            // Paparkan amaran yang lebih terperinci jika gagal
+            if (error.response) {
+                alert(`Gagal menghantar mesej: Ralat dari pelayan (${error.response.status})`);
+            } else if (error.request) {
+                alert(`Gagal menghantar mesej: Tiada respon dari pelayan (Sila pastikan pelayan di port 5000 sedang berjalan)`);
+            } else {
+                alert(`Gagal menghantar mesej: Ralat tetapan (${error.message})`);
+            }
             setStatusHantar('');
         }
     };
-
+    
     if (!user) return null;
 
     return (

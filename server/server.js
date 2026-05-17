@@ -294,9 +294,19 @@ db.query(sqlBinaJadual, (err) => {
 // POST: KP hantar maklum balas kepada pelajar
 app.post('/api/kp/maklum-balas', (req, res) => {
     const { no_matrik, mesej } = req.body;
+    
+    // CCTV: Cetak data yang diterima dari Frontend ke terminal
+    console.log("📥 Cuba hantar mesej ke matrik:", no_matrik);
+    console.log("💬 Kandungan Mesej:", mesej);
+    
     const sql = "INSERT INTO maklum_balas (no_matrik, mesej) VALUES (?, ?)";
+    
     db.query(sql, [no_matrik, mesej], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            // CCTV: Cetak ralat MySQL yang sebenar jika gagal
+            console.error("❌ RALAT SQL MAKLUM BALAS:", err.message);
+            return res.status(500).json({ error: err.message });
+        }
         res.status(200).json({ message: "Maklum balas berjaya dihantar!" });
     });
 });
