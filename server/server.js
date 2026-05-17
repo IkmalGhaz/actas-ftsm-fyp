@@ -234,6 +234,49 @@ app.get('/api/kp/pantau-kursus', (req, res) => {
     });
 });
 
+// ===================================================================
+// API KHAS PEGAWAI (CRUD DATA PELAJAR)
+// ===================================================================
+
+// READ: Tarik senarai semua pelajar
+app.get('/api/pegawai/pelajar', (req, res) => {
+    db.query("SELECT * FROM pelajar ORDER BY no_matrik ASC", (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json(results);
+    });
+});
+
+// CREATE: Tambah pelajar baharu
+app.post('/api/pegawai/pelajar', (req, res) => {
+    const { no_matrik, katalaluan, nama, program } = req.body;
+    const sql = "INSERT INTO pelajar (no_matrik, katalaluan, nama, program) VALUES (?, ?, ?, ?)";
+    db.query(sql, [no_matrik, katalaluan, nama, program], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({ message: "Berjaya daftar pelajar baharu!" });
+    });
+});
+
+// UPDATE: Kemas kini profil pelajar
+app.put('/api/pegawai/pelajar/:id', (req, res) => {
+    const id = req.params.id; // No Matrik asal
+    const { nama, program, katalaluan } = req.body;
+    const sql = "UPDATE pelajar SET nama = ?, program = ?, katalaluan = ? WHERE no_matrik = ?";
+    db.query(sql, [nama, program, katalaluan, id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: "Rekod pelajar berjaya dikemas kini!" });
+    });
+});
+
+// DELETE: Padam rekod pelajar
+app.delete('/api/pegawai/pelajar/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM pelajar WHERE no_matrik = ?";
+    db.query(sql, [id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: "Pelajar berjaya dipadam dari sistem!" });
+    });
+});
+
 // Hidupkan server pada Port 5000
 app.listen(5000, () => {
     console.log('🚀 Server Backend ACTAS berjalan di port 5000');
