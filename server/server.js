@@ -234,6 +234,34 @@ app.get('/api/kp/pantau-kursus', (req, res) => {
     });
 });
 
+// API Endpoint 6: Analisis Taburan Gred Keseluruhan (Untuk KP)
+app.get('/api/kp/taburan-gred', (req, res) => {
+    // Kita kira jumlah setiap gred dan susun ikut hierarki A hingga E
+    const sql = `
+        SELECT gred, COUNT(no_matrik) as jumlah
+        FROM keputusan
+        GROUP BY gred
+        ORDER BY
+            CASE gred
+                WHEN 'A' THEN 1
+                WHEN 'A-' THEN 2
+                WHEN 'B+' THEN 3
+                WHEN 'B' THEN 4
+                WHEN 'B-' THEN 5
+                WHEN 'C+' THEN 6
+                WHEN 'C' THEN 7
+                WHEN 'D' THEN 8
+                WHEN 'E' THEN 9
+                ELSE 10
+            END
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json(results);
+    });
+});
+
 // ===================================================================
 // API KHAS PEGAWAI (CRUD DATA PELAJAR)
 // ===================================================================
