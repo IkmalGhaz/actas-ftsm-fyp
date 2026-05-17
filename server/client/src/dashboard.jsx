@@ -2,24 +2,24 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bell, MessageSquare, AlertTriangle } from 'lucide-react';
 
 function Dashboard() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
     
     const [dataAkademik, setDataAkademik] = useState(null);
+    const [notifikasi, setNotifikasi] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Proses data keputusan MySQL menjadi data carta GPA per Semester
     const chartData = useMemo(() => {
-        // Fallback jika pelajar belum ada rekod peperiksaan atau data belum sedia
         if (!dataAkademik || !dataAkademik.senarai_keputusan || dataAkademik.senarai_keputusan.length === 0) {
             return [{ name: 'Sem 1', gpa: 0.00 }];
         }
 
         const dataMengikutSem = {};
 
-        // Kumpulkan jam kredit dan mata nilaian mengikut semester
         dataAkademik.senarai_keputusan.forEach(subjek => {
             const sem = subjek.semester_diambil;
             if (!dataMengikutSem[sem]) {
@@ -29,12 +29,11 @@ function Dashboard() {
             dataMengikutSem[sem].totalKredit += parseInt(subjek.jam_kredit);
         });
 
-        // Hasilkan susunan array yang faham dibaca oleh Recharts
         return Object.keys(dataMengikutSem).sort().map(sem => {
             const gpa = dataMengikutSem[sem].totalMata / dataMengikutSem[sem].totalKredit;
             return {
                 name: `Sem ${sem}`,
-                gpa: parseFloat(gpa.toFixed(2)) // Bundarkan kepada 2 titik perpuluhan
+                gpa: parseFloat(gpa.toFixed(2))
             };
         });
     }, [dataAkademik]);
@@ -45,23 +44,24 @@ function Dashboard() {
             return;
         }
 
-        const fetchAkademikData = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`);
-                setDataAkademik(response.data);
+                // Tarik data akademik
+                const resAkademik = await axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`);
+                setDataAkademik(resAkademik.data);
+                
+                // Tarik mesej maklum balas dari KP
+                const resNotif = await axios.get(`http://localhost:5000/api/pelajar/maklum-balas/${user.no_matrik}`);
+                setNotifikasi(resNotif.data);
+                
                 setLoading(false);
             } catch (error) {
-                console.error("Gagal menarik data, menggunakan data demo:", error);
-                setDataAkademik({
-                    jumlah_kredit: 90,
-                    pngk_semasa: 3.67,
-                    senarai_keputusan: []
-                });
+                console.error("Gagal menarik data papan pemuka Pelajar:", error);
                 setLoading(false);
             }
         };
 
-        fetchAkademikData();
+        fetchDashboardData();
     }, [user, navigate]);
 
     if (!user) return null;
@@ -88,15 +88,35 @@ function Dashboard() {
                 </div>
             ) : (
                 <>
+                    {/* Kotak Mesej/Notifikasi Masuk dari KP (Pilihan 1) */}
+                    {notifikasi.length > 0 && (
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <Bell size={14} className="text-blue-500" /> Maklum Balas Ketua Program
+                            </h4>
+                            {notifikasi.map((item) => (
+                                <div key={item.id} className="bg-amber-50 border border-amber-200/70 p-5 rounded-2xl flex items-start gap-4 shadow-sm">
+                                    <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl mt-0.5">
+                                        <MessageSquare size={20} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-gray-700 font-medium leading-relaxed">{item.mesej}</p>
+                                        <p className="text-xs text-amber-600 font-bold mt-2">
+                                            Diterima pada: {new Date(item.tarikh).toLocaleDateString('ms-MY')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Card 1: PNGK Terkini */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
                             <p className="text-sm text-gray-500 font-semibold mb-3">PNGK Terkini</p>
                             <p className="text-4xl font-extrabold text-emerald-500">{dataAkademik?.pngk_semasa || "0.00"}</p>
                         </div>
 
-                        {/* Card 2: Status */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
                             <p className="text-sm text-gray-500 font-semibold mb-3">Status</p>
                             <div>
@@ -106,7 +126,6 @@ function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Card 3: Kredit Graduasi */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
                             <p className="text-sm text-gray-500 font-semibold mb-3">Kredit Graduasi</p>
                             <div className="flex items-end space-x-1 mb-3">
@@ -131,17 +150,8 @@ function Dashboard() {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 500}} dy={15} />
                                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12, fontWeight: 500}} domain={[3.0, 4.0]} ticks={[3.0, 3.2, 3.4, 3.6, 3.8, 4.0]} />
-                                    <Tooltip 
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="gpa" 
-                                        stroke="#3b82f6" 
-                                        strokeWidth={3} 
-                                        dot={renderCustomDot}
-                                        activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} 
-                                    />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                    <Line type="monotone" dataKey="gpa" stroke="#3b82f6" strokeWidth={3} dot={renderCustomDot} activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -149,28 +159,25 @@ function Dashboard() {
                             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
                             <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">GPA</span>
                         </div>
-                        
-                        {/* Jadual Rekod Kursus Section */}
+                    </div>
+
+                    {/* Jadual Rekod Kursus Section */}
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Rekod Keputusan Akademik</h3>
-                            <button 
-                                onClick={() => navigate('/tambah-kursus')} 
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm"
-                            >
+                            <button onClick={() => navigate('/tambah-kursus')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm">
                                 + Daftar Kursus
                             </button>
                         </div>
-                        
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                                        <th className="p-4 rounded-tl-lg font-semibold">Kod Kursus</th>
+                                        <th className="p-4 font-semibold">Kod Kursus</th>
                                         <th className="p-4 font-semibold">Nama Kursus</th>
                                         <th className="p-4 font-semibold text-center">Kredit</th>
                                         <th className="p-4 font-semibold text-center">Semester</th>
-                                        <th className="p-4 rounded-tr-lg font-semibold text-center">Gred</th>
+                                        <th className="p-4 font-semibold text-center">Gred</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
@@ -192,18 +199,9 @@ function Dashboard() {
                                             </td>
                                         </tr>
                                     ))}
-                                    
-                                    {(!dataAkademik?.senarai_keputusan || dataAkademik.senarai_keputusan.length === 0) && (
-                                        <tr>
-                                            <td colSpan="5" className="p-10 text-center text-gray-400 font-medium">
-                                                Tiada rekod kursus dijumpai. Sila daftar kursus baharu.
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
                     </div>
                 </>
             )}

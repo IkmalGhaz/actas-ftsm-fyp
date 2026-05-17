@@ -262,6 +262,45 @@ app.get('/api/kp/taburan-gred', (req, res) => {
     });
 });
 
+// API Endpoint 7: Tarik Maklum Balas / Amaran Khusus untuk Pelajar Tertentu
+app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
+    const noMatrik = req.params.no_matrik;
+    const sql = "SELECT * FROM maklum_balas WHERE no_matrik = ? ORDER BY tarikh DESC";
+    
+    db.query(sql, [noMatrik], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json(results);
+    });
+});
+
+// ===================================================================
+// API MAKLUM BALAS / AMARAN AKADEMIK
+// ===================================================================
+
+// Auto-bina jadual jika belum wujud dalam MySQL
+const sqlBinaJadual = `
+    CREATE TABLE IF NOT EXISTS maklum_balas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        no_matrik VARCHAR(20),
+        tarikh TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        mesej TEXT,
+        status VARCHAR(20) DEFAULT 'Belum Dibaca'
+    )
+`;
+db.query(sqlBinaJadual, (err) => {
+    if (err) console.error("Ralat bina jadual maklum_balas:", err.message);
+});
+
+// POST: KP hantar maklum balas kepada pelajar
+app.post('/api/kp/maklum-balas', (req, res) => {
+    const { no_matrik, mesej } = req.body;
+    const sql = "INSERT INTO maklum_balas (no_matrik, mesej) VALUES (?, ?)";
+    db.query(sql, [no_matrik, mesej], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: "Maklum balas berjaya dihantar!" });
+    });
+});
+
 // ===================================================================
 // API KHAS PEGAWAI (CRUD DATA PELAJAR)
 // ===================================================================
