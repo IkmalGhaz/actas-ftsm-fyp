@@ -274,6 +274,36 @@ app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
 });
 
 // ===================================================================
+// API PENILAIAN KURSUS (PELAJAR KEPADA KP)
+// ===================================================================
+
+// Auto-bina jadual penilaian_kursus
+const sqlBinaPenilaian = `
+    CREATE TABLE IF NOT EXISTS penilaian_kursus (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        no_matrik VARCHAR(20),
+        kod_kursus VARCHAR(20),
+        rating INT,
+        komen TEXT,
+        tarikh TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+`;
+db.query(sqlBinaPenilaian, (err) => {
+    if (err) console.error("Ralat bina jadual penilaian_kursus:", err.message);
+});
+
+// POST: Pelajar hantar penilaian kursus
+app.post('/api/pelajar/penilaian', (req, res) => {
+    const { no_matrik, kod_kursus, rating, komen } = req.body;
+    const sql = "INSERT INTO penilaian_kursus (no_matrik, kod_kursus, rating, komen) VALUES (?, ?, ?, ?)";
+    
+    db.query(sql, [no_matrik, kod_kursus, rating, komen], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: "Penilaian kursus berjaya dihantar!" });
+    });
+});
+
+// ===================================================================
 // API MAKLUM BALAS / AMARAN AKADEMIK
 // ===================================================================
 
@@ -353,6 +383,7 @@ app.delete('/api/pegawai/pelajar/:id', (req, res) => {
         res.status(200).json({ message: "Pelajar berjaya dipadam dari sistem!" });
     });
 });
+
 
 // Hidupkan server pada Port 5000
 app.listen(5000, () => {

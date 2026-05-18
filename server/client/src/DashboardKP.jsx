@@ -37,6 +37,58 @@ function DashboardKP() {
 
     if (!user) return null;
 
+    const muatTurunCSV = () => {
+    if (!kpData.senarai_pelajar || kpData.senarai_pelajar.length === 0) {
+        return alert("Tiada data untuk dimuat turun");
+    }
+    
+    const headers = ["No Matrik", "Nama Pelajar", "Program", "Kredit Terkumpul", "PNGK"];
+    const rows = kpData.senarai_pelajar.map(p => [
+        p.no_matrik,
+        `"${p.nama.toUpperCase()}"`,
+        `"${p.program}"`,
+        p.totalKredit,
+        p.cgpa
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Keseluruhan_Pelajar_FTSM.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const muatTurunCSV = () => {
+    if (!kpData.senarai_pelajar || kpData.senarai_pelajar.length === 0) {
+        return alert("Tiada data untuk dimuat turun");
+    }
+    
+    const headers = ["No Matrik", "Nama Pelajar", "Program", "Kredit Terkumpul", "PNGK"];
+    const rows = kpData.senarai_pelajar.map(p => [
+        p.no_matrik,
+        `"${p.nama.toUpperCase()}"`,
+        `"${p.program}"`,
+        p.totalKredit,
+        p.cgpa
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Keseluruhan_Pelajar_FTSM.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
             {/* Header KP */}
@@ -106,9 +158,9 @@ function DashboardKP() {
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Senarai Prestasi Pelajar</h3>
-                            <button className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">
-                                Muat Turun Laporan (CSV)
-                            </button>
+                            <button onClick={muatTurunCSV} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">
+    Muat Turun Laporan (CSV)
+</button>
                         </div>
                         
                         <div className="overflow-x-auto">

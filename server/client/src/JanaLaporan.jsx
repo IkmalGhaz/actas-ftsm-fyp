@@ -48,6 +48,33 @@ function JanaLaporan() {
 
     if (!user) return null;
 
+    const muatTurunCSV = () => {
+    if (!pelajarDitapis || pelajarDitapis.length === 0) {
+        return alert("Tiada data untuk dimuat turun");
+    }
+    
+    const headers = ["No Matrik", "Nama Pelajar", "Program", "Kredit Terkumpul", "PNGK"];
+    const rows = pelajarDitapis.map(p => [
+        p.no_matrik,
+        `"${p.nama.toUpperCase()}"`,
+        `"${p.program}"`,
+        p.totalKredit,
+        p.cgpa
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Pegawai_Kategori_${tapisan}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
             {/* Header Laporan (Disembunyikan semasa mencetak) */}
@@ -68,10 +95,10 @@ function JanaLaporan() {
                         <Printer size={18} />
                         Cetak PDF
                     </button>
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm">
-                        <Download size={18} />
-                        Eksport CSV
-                    </button>
+                    <button onClick={muatTurunCSV} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm">
+    <Download size={18} />
+    Eksport CSV
+</button>
                 </div>
             </div>
 
