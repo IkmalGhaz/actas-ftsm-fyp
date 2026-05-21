@@ -23,9 +23,9 @@ function AnalisisGred() {
                 const response = await axios.get('http://localhost:5000/api/kp/taburan-gred');
                 // Format semula data untuk difahami oleh Recharts
                 const formattedData = response.data.map(item => ({
-                    name: `Gred ${item.gred}`,
-                    jumlah: item.jumlah,
-                    gredAsal: item.gred
+                    name: `Gred ${item.gred ? item.gred.trim().toUpperCase() : '?'}`,
+                    jumlah: parseInt(item.jumlah) || 0,
+                    gredAsal: item.gred ? item.gred.trim().toUpperCase() : ''
                 }));
                 setDataGred(formattedData);
             } catch (error) {
@@ -40,6 +40,7 @@ function AnalisisGred() {
 
     // Fungsi menentukan warna palang berdasarkan gred
     const getBarColor = (gred) => {
+        if (!gred) return '#3b82f6';
         if (gred.startsWith('A')) return '#10b981'; // Emerald/Hijau untuk Cemerlang
         if (gred.startsWith('B')) return '#3b82f6'; // Biru untuk Baik
         if (gred.startsWith('C')) return '#f59e0b'; // Kuning untuk Sederhana
@@ -59,7 +60,7 @@ function AnalisisGred() {
                     <BarChartIcon className="text-blue-600" size={32} />
                     Analisis Taburan Gred
                 </h1>
-                <p className="text-gray-500 mt-2 font-medium">Gambaran keseluruhan lengkung loceng (bell curve) bagi pencapaian pelajar fakulti.</p>
+                <p className="text-gray-500 mt-2 font-medium">Gambaran keseluruhan lengkung prestasi bagi pencapaian pelajar fakulti.</p>
             </div>
 
             {loading ? (
@@ -70,12 +71,14 @@ function AnalisisGred() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
                     {/* Bahagian Carta Palang (Main View) */}
-                    <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
                         <h3 className="text-lg font-bold text-gray-900 mb-6">Kekerapan Mengikut Gred Keseluruhan</h3>
                         
                         {dataGred.length > 0 ? (
-                            <div className="h-[350px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
+                            /* KUNCI PENYELESAIAN: Tetapkan min-height dan flex-grow supaya ia tidak kempis */
+                            <div className="w-full flex-grow" style={{ minHeight: '350px', height: '350px' }}>
+                                {/* Guna 99% width kadang-kadang membantu masalah resize container Recharts */}
+                                <ResponsiveContainer width="99%" height="100%">
                                     <BarChart data={dataGred} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12, fontWeight: 600}} dy={10} />
@@ -99,7 +102,7 @@ function AnalisisGred() {
                         )}
                         
                         {/* Petunjuk Warna (Legend) */}
-                        <div className="flex flex-wrap justify-center gap-6 mt-8">
+                        <div className="flex flex-wrap justify-center gap-6 mt-auto pt-8">
                             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><span className="text-xs font-bold text-gray-600">Cemerlang (A, A-)</span></div>
                             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div><span className="text-xs font-bold text-gray-600">Kepujian (B+, B, B-)</span></div>
                             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span className="text-xs font-bold text-gray-600">Lulus (C+, C)</span></div>
