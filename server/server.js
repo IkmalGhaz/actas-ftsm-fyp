@@ -16,127 +16,163 @@ const db = mysql.createConnection({
 });
 
 db.connect((err) => {
-    if (err) throw err;
+    if (err) {
+        console.error('❌ Gagal sambung ke MySQL:', err.message);
+        process.exit(1);
+    }
     console.log('✅ Berjaya sambung ke MySQL (actas_db)!');
 });
 
 // API Endpoint 1: Log Masuk Dinamik (Pelajar, KP, dan Pegawai)
 app.post('/api/login', (req, res) => {
-    const { no_matrik, katalaluan } = req.body;
-    
-    // 1. Cuba cari dalam jadual pelajar terlebih dahulu
-    const sqlPelajar = "SELECT * FROM pelajar WHERE no_matrik = ? AND katalaluan = ?";
-    
-    db.query(sqlPelajar, [no_matrik, katalaluan], (err, resultPelajar) => {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        // Jika dijumpai dalam jadual pelajar
-        if (resultPelajar.length > 0) {
-            const user = {
-                no_matrik: resultPelajar[0].no_matrik,
-                nama: resultPelajar[0].nama,
-                program: resultPelajar[0].program,
-                role: 'pelajar' // Beritahu React ini adalah pelajar
-            };
-            return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user });
+    try {
+        const { no_matrik, katalaluan } = req.body;
+
+        if (!no_matrik || !katalaluan) {
+            return res.status(400).json({ message: "ID Pengguna dan Kata Laluan diperlukan." });
         }
-        
-        // 2. Jika tidak jumpa dalam jadual pelajar, cari dalam jadual KAKITANGAN (UKMPer)
-        const sqlKakitangan = "SELECT * FROM kakitangan WHERE id_ukmper = ? AND katalaluan = ?";
-        
-        db.query(sqlKakitangan, [no_matrik, katalaluan], (errKakitangan, resultKakitangan) => {
-            if (errKakitangan) return res.status(500).json({ error: errKakitangan.message });
-            
-            // Jika dijumpai dalam jadual kakitangan
-            if (resultKakitangan.length > 0) {
-                // Tentukan peranan ('kp' atau 'pegawai') berdasarkan data lajur 'peranan'
-                let penentuRole = 'pegawai'; // Default
-                
-                if (resultKakitangan[0].peranan === 'Ketua Program') {
-                    penentuRole = 'kp';
-                } else if (resultKakitangan[0].peranan === 'Pegawai FTSM') {
-                    penentuRole = 'pegawai';
-                }
-                
-                const user = {
-                    no_matrik: resultKakitangan[0].id_ukmper, // Guna ID UKMPer
-                    nama: resultKakitangan[0].nama,
-                    program: resultKakitangan[0].peranan,
-                    role: penentuRole // Beritahu React peranan spesifik kakitangan ini
-                };
-                return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKakitangan[0].peranan}!`, user });
+
+        // 1. Cuba cari dalam jadual pelajar terlebih dahulu
+        const sqlPelajar = "SELECT * FROM pelajar WHERE no_matrik = ? AND katalaluan = ?";
+
+        db.query(sqlPelajar, [no_matrik, katalaluan], (err, resultPelajar) => {
+            if (err) {
+                console.error('❌ Login query error (pelajar):', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data. Sila cuba lagi.' });
             }
-            
-            // 3. Jika kedua-dua jadual langsung tak jumpa data
-            return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
+
+            // Jika dijumpai dalam jadual pelajar
+            if (resultPelajar.length > 0) {
+                const user = {
+                    no_matrik: resultPelajar[0].no_matrik,
+                    nama: resultPelajar[0].nama,
+                    program: resultPelajar[0].program,
+                    role: 'pelajar'
+                };
+                return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user });
+            }
+
+            // 2. Jika tidak jumpa dalam jadual pelajar, cari dalam jadual KAKITANGAN (UKMPer)
+            const sqlKakitangan = "SELECT * FROM kakitangan WHERE id_ukmper = ? AND katalaluan = ?";
+
+            db.query(sqlKakitangan, [no_matrik, katalaluan], (errKakitangan, resultKakitangan) => {
+                if (errKakitangan) {
+                    console.error('❌ Login query error (kakitangan):', errKakitangan.message);
+                    return res.status(500).json({ error: 'Ralat pangkalan data. Sila cuba lagi.' });
+                }
+
+                // Jika dijumpai dalam jadual kakitangan
+                if (resultKakitangan.length > 0) {
+                    let penentuRole = 'pegawai';
+
+                    if (resultKakitangan[0].peranan === 'Ketua Program') {
+                        penentuRole = 'kp';
+                    } else if (resultKakitangan[0].peranan === 'Pegawai FTSM') {
+                        penentuRole = 'pegawai';
+                    }
+
+                    const user = {
+                        no_matrik: resultKakitangan[0].id_ukmper,
+                        nama: resultKakitangan[0].nama,
+                        program: resultKakitangan[0].peranan,
+                        role: penentuRole
+                    };
+                    return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKakitangan[0].peranan}!`, user });
+                }
+
+                // 3. Jika kedua-dua jadual langsung tak jumpa data
+                return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
+            });
         });
-    });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/login:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka. Sila hubungi pentadbir.' });
+    }
 });
 
 // API Endpoint 2: Capaian Data Akademik & Kiraan Automatik
 app.get('/api/akademik/:no_matrik', (req, res) => {
-    const noMatrik = req.params.no_matrik;
+    try {
+        const noMatrik = req.params.no_matrik;
 
-    // Guna SQL JOIN untuk gabung jadual Keputusan dan Kursus
-    const sql = `
-        SELECT 
-            k.kod_kursus, 
-            k.nama_kursus, 
-            k.jam_kredit, 
-            k.kategori, 
-            kp.gred, 
-            kp.mata_nilaian, 
-            kp.semester_diambil 
-        FROM Keputusan kp
-        JOIN Kursus k ON kp.kod_kursus = k.kod_kursus
-        WHERE kp.no_matrik = ?
-        ORDER BY kp.semester_diambil ASC
-    `;
+        const sql = `
+            SELECT
+                k.kod_kursus,
+                k.nama_kursus,
+                k.jam_kredit,
+                k.kategori,
+                kp.gred,
+                kp.mata_nilaian,
+                kp.semester_diambil
+            FROM Keputusan kp
+            JOIN Kursus k ON kp.kod_kursus = k.kod_kursus
+            WHERE kp.no_matrik = ?
+            ORDER BY kp.semester_diambil ASC
+        `;
 
-    db.query(sql, [noMatrik], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        db.query(sql, [noMatrik], (err, results) => {
+            if (err) {
+                console.error('❌ /api/akademik query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan data akademik.' });
+            }
 
-        // Logik Pengiraan PNGK & Jumlah Kredit
-        let totalKredit = 0;
-        let totalMataNilaian = 0;
+            let totalKredit = 0;
+            let totalMataNilaian = 0;
 
-        results.forEach(subjek => {
-            totalKredit += subjek.jam_kredit;
-            totalMataNilaian += (subjek.mata_nilaian * subjek.jam_kredit);
+            results.forEach(subjek => {
+                totalKredit += subjek.jam_kredit;
+                totalMataNilaian += (subjek.mata_nilaian * subjek.jam_kredit);
+            });
+
+            let pngk = totalKredit > 0 ? (totalMataNilaian / totalKredit).toFixed(2) : "0.00";
+
+            res.status(200).json({
+                status: "Berjaya",
+                jumlah_kredit: totalKredit,
+                pngk_semasa: pngk,
+                senarai_keputusan: results
+            });
         });
-
-        // Elak ralat bahagi dengan sifar (jika pelajar tiada subjek lagi)
-        let pngk = totalKredit > 0 ? (totalMataNilaian / totalKredit).toFixed(2) : "0.00";
-
-        // Hantar balik data yang dah siap diproses ke React
-        res.status(200).json({
-            status: "Berjaya",
-            jumlah_kredit: totalKredit,
-            pngk_semasa: pngk,
-            senarai_keputusan: results
-        });
-    });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/akademik:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // API Endpoint 3: Tambah Kursus & Keputusan Baharu secara Dinamik
 app.post('/api/tambah-kursus', (req, res) => {
-    const { no_matrik, kod_kursus, nama_kursus, jam_kredit, kategori, gred, mata_nilaian, semester_diambil } = req.body;
+    try {
+        const { no_matrik, kod_kursus, nama_kursus, jam_kredit, kategori, gred, mata_nilaian, semester_diambil } = req.body;
 
-    // Langkah A: Masukkan ke jadual Kursus (IGNORE jika kod_kursus dah wujud dalam Master Data Universiti)
-    const sqlKursus = "INSERT IGNORE INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori) VALUES (?, ?, ?, ?)";
-    
-    db.query(sqlKursus, [kod_kursus, nama_kursus, jam_kredit, kategori], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (!no_matrik || !kod_kursus || !gred) {
+            return res.status(400).json({ error: 'Medan no_matrik, kod_kursus, dan gred diperlukan.' });
+        }
 
-        // Langkah B: Masukkan gred ke jadual Keputusan (Ikat pelajar dengan kursus tersebut)
-        const sqlKeputusan = "INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES (?, ?, ?, ?, ?)";
-        
-        db.query(sqlKeputusan, [no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil], (err2) => {
-            if (err2) return res.status(500).json({ error: err2.message });
-            
-            res.status(200).json({ message: "Data keputusan berjaya ditambah!" });
+        // Langkah A: Masukkan ke jadual Kursus (IGNORE jika kod_kursus dah wujud)
+        const sqlKursus = "INSERT IGNORE INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori) VALUES (?, ?, ?, ?)";
+
+        db.query(sqlKursus, [kod_kursus, nama_kursus, jam_kredit, kategori], (err) => {
+            if (err) {
+                console.error('❌ /api/tambah-kursus insert kursus error:', err.message);
+                return res.status(500).json({ error: 'Ralat semasa menyimpan maklumat kursus.' });
+            }
+
+            // Langkah B: Masukkan gred ke jadual Keputusan
+            const sqlKeputusan = "INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES (?, ?, ?, ?, ?)";
+
+            db.query(sqlKeputusan, [no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil], (err2) => {
+                if (err2) {
+                    console.error('❌ /api/tambah-kursus insert keputusan error:', err2.message);
+                    return res.status(500).json({ error: 'Ralat semasa menyimpan keputusan pelajar.' });
+                }
+
+                res.status(200).json({ message: "Data keputusan berjaya ditambah!" });
+            });
         });
-    });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/tambah-kursus:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // ===================================================================
@@ -145,132 +181,158 @@ app.post('/api/tambah-kursus', (req, res) => {
 
 // API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
 app.get('/api/kp/analitik-pelajar', (req, res) => {
-    // Tarik semua pelajar berserta gred mereka
-    const sql = `
-        SELECT 
-            p.no_matrik, p.nama, p.program,
-            k.jam_kredit, kp.mata_nilaian
-        FROM pelajar p
-        LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
-        LEFT JOIN kursus k ON kp.kod_kursus = k.kod_kursus
-    `;
+    try {
+        const sql = `
+            SELECT
+                p.no_matrik, p.nama, p.program,
+                k.jam_kredit, kp.mata_nilaian
+            FROM pelajar p
+            LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
+            LEFT JOIN kursus k ON kp.kod_kursus = k.kod_kursus
+        `;
 
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        // Kumpulan data mengikut pelajar (No Matrik)
-        const pelajarMap = {};
-
-        results.forEach(row => {
-            if (!pelajarMap[row.no_matrik]) {
-                pelajarMap[row.no_matrik] = {
-                    no_matrik: row.no_matrik,
-                    nama: row.nama,
-                    program: row.program,
-                    totalMata: 0,
-                    totalKredit: 0
-                };
+        db.query(sql, (err, results) => {
+            if (err) {
+                console.error('❌ /api/kp/analitik-pelajar query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan analitik pelajar.' });
             }
-            
-            if (row.jam_kredit && row.mata_nilaian) {
-                pelajarMap[row.no_matrik].totalMata += (parseFloat(row.mata_nilaian) * parseInt(row.jam_kredit));
-                pelajarMap[row.no_matrik].totalKredit += parseInt(row.jam_kredit);
-            }
+
+            const pelajarMap = {};
+
+            results.forEach(row => {
+                if (!pelajarMap[row.no_matrik]) {
+                    pelajarMap[row.no_matrik] = {
+                        no_matrik: row.no_matrik,
+                        nama: row.nama,
+                        program: row.program,
+                        totalMata: 0,
+                        totalKredit: 0
+                    };
+                }
+
+                if (row.jam_kredit && row.mata_nilaian) {
+                    pelajarMap[row.no_matrik].totalMata += (parseFloat(row.mata_nilaian) * parseInt(row.jam_kredit));
+                    pelajarMap[row.no_matrik].totalKredit += parseInt(row.jam_kredit);
+                }
+            });
+
+            let totalCgpaSemua = 0;
+            let pelajarCount = 0;
+            const senaraiPelajar = [];
+
+            Object.values(pelajarMap).forEach(p => {
+                p.cgpa = p.totalKredit > 0 ? (p.totalMata / p.totalKredit).toFixed(2) : "0.00";
+                senaraiPelajar.push(p);
+
+                if (p.totalKredit > 0) {
+                    totalCgpaSemua += parseFloat(p.cgpa);
+                    pelajarCount++;
+                }
+            });
+
+            const purataCgpaFakulti = pelajarCount > 0 ? (totalCgpaSemua / pelajarCount).toFixed(2) : "0.00";
+
+            res.status(200).json({
+                status: "Berjaya",
+                jumlah_pelajar: Object.keys(pelajarMap).length,
+                purata_cgpa_fakulti: purataCgpaFakulti,
+                senarai_pelajar: senaraiPelajar
+            });
         });
-
-        // Kira CGPA untuk setiap pelajar dan kumpulkan statistik
-        let totalCgpaSemua = 0;
-        let pelajarCount = 0;
-        let senaraiPelajar = [];
-
-        Object.values(pelajarMap).forEach(p => {
-            p.cgpa = p.totalKredit > 0 ? (p.totalMata / p.totalKredit).toFixed(2) : "0.00";
-            senaraiPelajar.push(p);
-            
-            if (p.totalKredit > 0) {
-                totalCgpaSemua += parseFloat(p.cgpa);
-                pelajarCount++;
-            }
-        });
-
-        const purataCgpaFakulti = pelajarCount > 0 ? (totalCgpaSemua / pelajarCount).toFixed(2) : "0.00";
-
-        res.status(200).json({
-            status: "Berjaya",
-            jumlah_pelajar: Object.keys(pelajarMap).length,
-            purata_cgpa_fakulti: purataCgpaFakulti,
-            senarai_pelajar: senaraiPelajar
-        });
-    });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/kp/analitik-pelajar:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // API Endpoint 5: Pantau Prestasi Mengikut Kursus (Untuk KP)
 app.get('/api/kp/pantau-kursus', (req, res) => {
-    // Gabungkan jadual kursus dan keputusan, kemudian kira statistik
-    const sql = `
-        SELECT 
-            k.kod_kursus, 
-            k.nama_kursus, 
-            k.kategori,
-            k.jam_kredit,
-            COUNT(kp.no_matrik) AS jumlah_pelajar,
-            AVG(kp.mata_nilaian) AS purata_mata
-        FROM kursus k
-        LEFT JOIN keputusan kp ON k.kod_kursus = kp.kod_kursus
-        GROUP BY k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit
-        ORDER BY purata_mata DESC
-    `;
+    try {
+        const sql = `
+            SELECT
+                k.kod_kursus,
+                k.nama_kursus,
+                k.kategori,
+                k.jam_kredit,
+                COUNT(kp.no_matrik) AS jumlah_pelajar,
+                AVG(kp.mata_nilaian) AS purata_mata
+            FROM kursus k
+            LEFT JOIN keputusan kp ON k.kod_kursus = kp.kod_kursus
+            GROUP BY k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit
+            ORDER BY purata_mata DESC
+        `;
 
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        db.query(sql, (err, results) => {
+            if (err) {
+                console.error('❌ /api/kp/pantau-kursus query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa memantau kursus.' });
+            }
 
-        // Bersihkan data (jika purata_mata null sebab tiada pelajar ambil)
-        const cleanResults = results.map(kursus => ({
-            ...kursus,
-            purata_mata: kursus.purata_mata ? parseFloat(kursus.purata_mata).toFixed(2) : "0.00"
-        }));
+            const cleanResults = results.map(kursus => ({
+                ...kursus,
+                purata_mata: kursus.purata_mata ? parseFloat(kursus.purata_mata).toFixed(2) : "0.00"
+            }));
 
-        res.status(200).json(cleanResults);
-    });
+            res.status(200).json(cleanResults);
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/kp/pantau-kursus:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // API Endpoint 6: Analisis Taburan Gred Keseluruhan (Untuk KP)
 app.get('/api/kp/taburan-gred', (req, res) => {
-    // Kita kira jumlah setiap gred dan susun ikut hierarki A hingga E
-    const sql = `
-        SELECT gred, COUNT(no_matrik) as jumlah
-        FROM keputusan
-        GROUP BY gred
-        ORDER BY
-            CASE gred
-                WHEN 'A' THEN 1
-                WHEN 'A-' THEN 2
-                WHEN 'B+' THEN 3
-                WHEN 'B' THEN 4
-                WHEN 'B-' THEN 5
-                WHEN 'C+' THEN 6
-                WHEN 'C' THEN 7
-                WHEN 'D' THEN 8
-                WHEN 'E' THEN 9
-                ELSE 10
-            END
-    `;
+    try {
+        const sql = `
+            SELECT gred, COUNT(no_matrik) as jumlah
+            FROM keputusan
+            GROUP BY gred
+            ORDER BY
+                CASE gred
+                    WHEN 'A'  THEN 1
+                    WHEN 'A-' THEN 2
+                    WHEN 'B+' THEN 3
+                    WHEN 'B'  THEN 4
+                    WHEN 'B-' THEN 5
+                    WHEN 'C+' THEN 6
+                    WHEN 'C'  THEN 7
+                    WHEN 'D'  THEN 8
+                    WHEN 'E'  THEN 9
+                    ELSE 10
+                END
+        `;
 
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(results);
-    });
+        db.query(sql, (err, results) => {
+            if (err) {
+                console.error('❌ /api/kp/taburan-gred query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan taburan gred.' });
+            }
+            res.status(200).json(results);
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/kp/taburan-gred:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // API Endpoint 7: Tarik Maklum Balas / Amaran Khusus untuk Pelajar Tertentu
 app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
-    const noMatrik = req.params.no_matrik;
-    const sql = "SELECT * FROM maklum_balas WHERE no_matrik = ? ORDER BY tarikh DESC";
-    
-    db.query(sql, [noMatrik], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(results);
-    });
+    try {
+        const noMatrik = req.params.no_matrik;
+        const sql = "SELECT * FROM maklum_balas WHERE no_matrik = ? ORDER BY tarikh DESC";
+
+        db.query(sql, [noMatrik], (err, results) => {
+            if (err) {
+                console.error('❌ /api/pelajar/maklum-balas query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan maklum balas.' });
+            }
+            res.status(200).json(results);
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/pelajar/maklum-balas:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // ===================================================================
@@ -294,13 +356,30 @@ db.query(sqlBinaPenilaian, (err) => {
 
 // POST: Pelajar hantar penilaian kursus
 app.post('/api/pelajar/penilaian', (req, res) => {
-    const { no_matrik, kod_kursus, rating, komen } = req.body;
-    const sql = "INSERT INTO penilaian_kursus (no_matrik, kod_kursus, rating, komen) VALUES (?, ?, ?, ?)";
-    
-    db.query(sql, [no_matrik, kod_kursus, rating, komen], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ message: "Penilaian kursus berjaya dihantar!" });
-    });
+    try {
+        const { no_matrik, kod_kursus, rating, komen } = req.body;
+
+        if (!no_matrik || !kod_kursus || rating === undefined) {
+            return res.status(400).json({ error: 'Medan no_matrik, kod_kursus, dan rating diperlukan.' });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Rating mesti antara 1 hingga 5.' });
+        }
+
+        const sql = "INSERT INTO penilaian_kursus (no_matrik, kod_kursus, rating, komen) VALUES (?, ?, ?, ?)";
+
+        db.query(sql, [no_matrik, kod_kursus, rating, komen], (err) => {
+            if (err) {
+                console.error('❌ /api/pelajar/penilaian query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa menghantar penilaian.' });
+            }
+            res.status(200).json({ message: "Penilaian kursus berjaya dihantar!" });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/pelajar/penilaian:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // ===================================================================
@@ -323,22 +402,29 @@ db.query(sqlBinaJadual, (err) => {
 
 // POST: KP hantar maklum balas kepada pelajar
 app.post('/api/kp/maklum-balas', (req, res) => {
-    const { no_matrik, mesej } = req.body;
-    
-    // CCTV: Cetak data yang diterima dari Frontend ke terminal
-    console.log("📥 Cuba hantar mesej ke matrik:", no_matrik);
-    console.log("💬 Kandungan Mesej:", mesej);
-    
-    const sql = "INSERT INTO maklum_balas (no_matrik, mesej) VALUES (?, ?)";
-    
-    db.query(sql, [no_matrik, mesej], (err) => {
-        if (err) {
-            // CCTV: Cetak ralat MySQL yang sebenar jika gagal
-            console.error("❌ RALAT SQL MAKLUM BALAS:", err.message);
-            return res.status(500).json({ error: err.message });
+    try {
+        const { no_matrik, mesej } = req.body;
+
+        if (!no_matrik || !mesej || mesej.trim() === '') {
+            return res.status(400).json({ error: 'Medan no_matrik dan mesej diperlukan.' });
         }
-        res.status(200).json({ message: "Maklum balas berjaya dihantar!" });
-    });
+
+        console.log("📥 Cuba hantar mesej ke matrik:", no_matrik);
+        console.log("💬 Kandungan Mesej:", mesej);
+
+        const sql = "INSERT INTO maklum_balas (no_matrik, mesej) VALUES (?, ?)";
+
+        db.query(sql, [no_matrik, mesej.trim()], (err) => {
+            if (err) {
+                console.error("❌ RALAT SQL MAKLUM BALAS:", err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa menghantar maklum balas.' });
+            }
+            res.status(200).json({ message: "Maklum balas berjaya dihantar!" });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/kp/maklum-balas:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // ===================================================================
@@ -347,41 +433,92 @@ app.post('/api/kp/maklum-balas', (req, res) => {
 
 // READ: Tarik senarai semua pelajar
 app.get('/api/pegawai/pelajar', (req, res) => {
-    db.query("SELECT * FROM pelajar ORDER BY no_matrik ASC", (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(results);
-    });
+    try {
+        db.query("SELECT * FROM pelajar ORDER BY no_matrik ASC", (err, results) => {
+            if (err) {
+                console.error('❌ /api/pegawai/pelajar GET error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan senarai pelajar.' });
+            }
+            res.status(200).json(results);
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in GET /api/pegawai/pelajar:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // CREATE: Tambah pelajar baharu
 app.post('/api/pegawai/pelajar', (req, res) => {
-    const { no_matrik, katalaluan, nama, program } = req.body;
-    const sql = "INSERT INTO pelajar (no_matrik, katalaluan, nama, program) VALUES (?, ?, ?, ?)";
-    db.query(sql, [no_matrik, katalaluan, nama, program], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ message: "Berjaya daftar pelajar baharu!" });
-    });
+    try {
+        const { no_matrik, katalaluan, nama, program } = req.body;
+
+        if (!no_matrik || !katalaluan || !nama || !program) {
+            return res.status(400).json({ error: 'Semua medan (no_matrik, katalaluan, nama, program) diperlukan.' });
+        }
+
+        const sql = "INSERT INTO pelajar (no_matrik, katalaluan, nama, program) VALUES (?, ?, ?, ?)";
+        db.query(sql, [no_matrik, katalaluan, nama, program], (err) => {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(409).json({ error: `No Matrik '${no_matrik}' sudah wujud dalam sistem.` });
+                }
+                console.error('❌ /api/pegawai/pelajar POST error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendaftar pelajar.' });
+            }
+            res.status(201).json({ message: "Berjaya daftar pelajar baharu!" });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in POST /api/pegawai/pelajar:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // UPDATE: Kemas kini profil pelajar
 app.put('/api/pegawai/pelajar/:id', (req, res) => {
-    const id = req.params.id; // No Matrik asal
-    const { nama, program, katalaluan } = req.body;
-    const sql = "UPDATE pelajar SET nama = ?, program = ?, katalaluan = ? WHERE no_matrik = ?";
-    db.query(sql, [nama, program, katalaluan, id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ message: "Rekod pelajar berjaya dikemas kini!" });
-    });
+    try {
+        const id = req.params.id;
+        const { nama, program, katalaluan } = req.body;
+
+        if (!nama || !program) {
+            return res.status(400).json({ error: 'Medan nama dan program diperlukan.' });
+        }
+
+        const sql = "UPDATE pelajar SET nama = ?, program = ?, katalaluan = ? WHERE no_matrik = ?";
+        db.query(sql, [nama, program, katalaluan, id], (err, result) => {
+            if (err) {
+                console.error('❌ /api/pegawai/pelajar PUT error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mengemas kini rekod pelajar.' });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: `Pelajar dengan No Matrik '${id}' tidak dijumpai.` });
+            }
+            res.status(200).json({ message: "Rekod pelajar berjaya dikemas kini!" });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in PUT /api/pegawai/pelajar:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 // DELETE: Padam rekod pelajar
 app.delete('/api/pegawai/pelajar/:id', (req, res) => {
-    const id = req.params.id;
-    const sql = "DELETE FROM pelajar WHERE no_matrik = ?";
-    db.query(sql, [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json({ message: "Pelajar berjaya dipadam dari sistem!" });
-    });
+    try {
+        const id = req.params.id;
+        const sql = "DELETE FROM pelajar WHERE no_matrik = ?";
+        db.query(sql, [id], (err, result) => {
+            if (err) {
+                console.error('❌ /api/pegawai/pelajar DELETE error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa memadamkan rekod pelajar.' });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: `Pelajar dengan No Matrik '${id}' tidak dijumpai.` });
+            }
+            res.status(200).json({ message: "Pelajar berjaya dipadam dari sistem!" });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in DELETE /api/pegawai/pelajar:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
 });
 
 
