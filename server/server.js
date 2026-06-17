@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -6,13 +7,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Sambungan ke Pangkalan Data (XAMPP MySQL)
+// DB config — env vars first, XAMPP defaults as fallback
 const db = mysql.createConnection({
-    host: '127.0.0.1',
-    port: 3306,
-    user: 'root', // username default XAMPP
-    password: '', // password default XAMPP (kosongkan)
-    database: 'actas_db'
+    host:     process.env.DB_HOST     || '127.0.0.1',
+    port:     process.env.DB_PORT     || 3306,
+    user:     process.env.DB_USER     || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME     || 'actas_db',
 });
 
 db.connect((err) => {
@@ -522,7 +523,7 @@ app.delete('/api/pegawai/pelajar/:id', (req, res) => {
 });
 
 
-// Hidupkan server pada Port 5000
-app.listen(5000, () => {
-    console.log('🚀 Server Backend ACTAS berjalan di port 5000');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server Backend ACTAS berjalan di port ${PORT}`);
 });
