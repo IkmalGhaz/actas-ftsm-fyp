@@ -16,7 +16,7 @@ function UrusDataPelajar() {
     const [formData, setFormData] = useState({
         no_matrik: '',
         nama: '',
-        program: 'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)',
+        program: 'Sains Komputer',
         katalaluan: '123' // Default password
     });
 
@@ -45,7 +45,7 @@ function UrusDataPelajar() {
         setFormData({ 
             no_matrik: '', 
             nama: '', 
-            program: 'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 
+            program: 'Sains Komputer', 
             katalaluan: '123' 
         });
         setIsEditing(false);
@@ -194,29 +194,20 @@ function UrusDataPelajar() {
                             
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Program / Jurusan Rasmi FTSM</label>
-                                <select 
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                <select
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#003082] outline-none bg-white"
                                     value={formData.program}
                                     onChange={(e) => setFormData({...formData, program: e.target.value})}
                                 >
-                                    {/* Kategori Kejuruteraan Perisian */}
-                                    <optgroup label="Kejuruteraan Perisian (SE)">
-                                        <option value="Kejuruteraan Perisian (Pembangunan Sistem Maklumat)">Kejuruteraan Perisian (Pembangunan Sistem Maklumat)</option>
-                                        <option value="Kejuruteraan Perisian (Pembangunan Sistem Multimedia)">Kejuruteraan Perisian (Pembangunan Sistem Multimedia)</option>
+                                    <optgroup label="Sains Komputer">
+                                        <option value="Sains Komputer">Sains Komputer</option>
                                     </optgroup>
-
-                                    {/* Kategori Teknologi Maklumat */}
-                                    <optgroup label="Teknologi Maklumat (IT)">
+                                    <optgroup label="Teknologi Maklumat">
                                         <option value="Teknologi Maklumat">Teknologi Maklumat</option>
                                     </optgroup>
-
-                                    {/* Kategori Sains Komputer & Pecahan Major Mula Tahun 2 Sem 4 */}
-                                    <optgroup label="Sains Komputer (CS)">
-                                        <option value="Sains Komputer">Sains Komputer (Am / Belum Pilih Major)</option>
-                                        <option value="Sains Komputer (Sains Data)">Sains Komputer (Sains Data)</option>
-                                        <option value="Sains Komputer (Mesin Cerdas)">Sains Komputer (Mesin Cerdas)</option>
-                                        <option value="Sains Komputer (Teknologi Perisian)">Sains Komputer (Teknologi Perisian)</option>
-                                        <option value="Sains Komputer (Teknologi Rangkaian)">Sains Komputer (Teknologi Rangkaian)</option>
+                                    <optgroup label="Kejuruteraan Perisian">
+                                        <option value="Kejuruteraan Perisian Multimedia">Kejuruteraan Perisian Multimedia</option>
+                                        <option value="Kejuruteraan Perisian Maklumat">Kejuruteraan Perisian Maklumat</option>
                                     </optgroup>
                                 </select>
                             </div>
