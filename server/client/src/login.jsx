@@ -8,15 +8,27 @@ function ForgotPasswordModal({ onClose }) {
     const [email, setEmail]   = useState('');
     const [sent, setSent]     = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError]   = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate network delay (UI only — no actual email sent)
-        setTimeout(() => {
+        setError('');
+        try {
+            const response = await axios.post('http://localhost:5000/api/forgot-password', {
+                no_matrik: id,
+                email,
+            });
+            if (response.data.success) {
+                setSent(true);
+            } else {
+                setError(response.data.message || 'Ralat tidak diketahui.');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Gagal menghubungi pelayan. Sila cuba lagi.');
+        } finally {
             setLoading(false);
-            setSent(true);
-        }, 1200);
+        }
     };
 
     return (
@@ -56,7 +68,7 @@ function ForgotPasswordModal({ onClose }) {
                             <div>
                                 <p className="font-bold text-gray-900 text-base">E-mel Dihantar!</p>
                                 <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                                    E-mel reset kata laluan telah dihantar ke{' '}
+                                    E-mel tetapan semula kata laluan telah dihantar ke{' '}
                                     <span className="font-semibold text-gray-800">{email}</span>.
                                     Sila semak inbox anda.
                                 </p>
@@ -74,16 +86,22 @@ function ForgotPasswordModal({ onClose }) {
                     ) : (
                         // Form
                         <form onSubmit={handleSubmit} className="space-y-5">
+                            {error && (
+                                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                                    {error}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                                    No. Matrik / ID UKMPer
+                                    No. Matrik
                                 </label>
                                 <input
                                     type="text"
                                     required
                                     value={id}
                                     onChange={(e) => setId(e.target.value)}
-                                    placeholder="Cth: A21CS001 atau KP001"
+                                    placeholder="Cth: A21CS001"
                                     className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
                                 />
                             </div>

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './login';
+import ResetPassword from './ResetPassword';
 import Dashboard from './dashboard';
 import Simulator from './Simulator';
 import SemakanKredit from './SemakanKredit';
@@ -30,7 +31,8 @@ function App() {
             <div className="App font-sans bg-gray-50 text-gray-900 min-h-screen">
                 <Routes>
                     <Route path="/" element={<Login />} />
-                    
+                    <Route path="/reset-password" element={<ResetPassword />} />
+
                     {/* Pelajar Routes */}
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                     <Route path="/simulator" element={<ProtectedRoute><Simulator /></ProtectedRoute>} />
