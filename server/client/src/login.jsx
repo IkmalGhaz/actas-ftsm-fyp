@@ -239,7 +239,7 @@ function Login() {
                             Pantau perjalanan<br />akademik anda.
                         </p>
                         <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
-                            TEPAT &nbsp;·&nbsp; EFISIEN &nbsp;·&nbsp; TERPERINCI
+                            MUDAH &nbsp;·&nbsp; EFISIEN &nbsp;·&nbsp; TERPERINCI
                         </p>
                     </div>
                 </div>
