@@ -3,189 +3,247 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Star, Send, BookOpen, MessageSquare, CheckCircle } from 'lucide-react';
 
+const RATING_LABEL = ['', 'Sangat Mengecewakan', 'Kurang Memuaskan', 'Sederhana Baik', 'Sangat Baik', 'Cemerlang!'];
+
 function PenilaianSubjek() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
-    
+
     const [senaraiSubjek, setSenaraiSubjek] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    // State borang
+    const [loading, setLoading]             = useState(true);
+    const [fetchError, setFetchError]       = useState('');
+
     const [subjekDipilih, setSubjekDipilih] = useState('');
-    const [rating, setRating] = useState(0);
-    const [hoverRating, setHoverRating] = useState(0);
-    const [komen, setKomen] = useState('');
-    const [statusHantar, setStatusHantar] = useState('');
-    const [berjaya, setBerjaya] = useState(false);
+    const [rating, setRating]               = useState(0);
+    const [hoverRating, setHoverRating]     = useState(0);
+    const [komen, setKomen]                 = useState('');
+    const [submitting, setSubmitting]       = useState(false);
+    const [formError, setFormError]         = useState('');
+    const [berjaya, setBerjaya]             = useState(false);
 
     useEffect(() => {
-        // Hanya pelajar yang boleh akses borang ini
-        if (!user || user.role !== 'pelajar') {
-            navigate('/');
-            return;
-        }
+        if (!user || user.role !== 'pelajar') { navigate('/'); return; }
 
-        // Tarik subjek yang pelajar dah ambil dari API akademik sedia ada
-        const fetchSubjekDiambil = async () => {
-            try {
-                const response = await axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`);
-                setSenaraiSubjek(response.data.senarai_keputusan || []);
-            } catch (error) {
-                console.error("Gagal menarik senarai kursus:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`)
+            .then(res => setSenaraiSubjek(res.data.senarai_keputusan || []))
+            .catch(() => setFetchError('Gagal memuat senarai kursus. Sila muat semula halaman.'))
+            .finally(() => setLoading(false));
+    }, []);
 
-        fetchSubjekDiambil();
-    }, [user, navigate]);
+    if (!user) return null;
 
-    const handleHantarPenilaian = async (e) => {
+    const selectedCourse = senaraiSubjek.find(s => s.kod_kursus === subjekDipilih) ?? null;
+
+    const handleHantar = async (e) => {
         e.preventDefault();
-        if (!subjekDipilih || rating === 0 || !komen.trim()) {
-            alert("Sila lengkapkan pilihan subjek, rating bintang, dan komen anda.");
-            return;
-        }
+        setFormError('');
+        if (!subjekDipilih)          { setFormError('Sila pilih kursus yang ingin dinilai.');           return; }
+        if (rating === 0)            { setFormError('Sila berikan rating bintang terlebih dahulu.');     return; }
+        if (komen.trim().length < 20){ setFormError('Komen anda perlu sekurang-kurangnya 20 aksara.');  return; }
 
-        setStatusHantar('Menghantar...');
+        setSubmitting(true);
         try {
             await axios.post('http://localhost:5000/api/pelajar/penilaian', {
                 no_matrik: user.no_matrik,
                 kod_kursus: subjekDipilih,
-                rating: rating,
-                komen: komen
+                rating,
+                komen,
             });
-            
             setBerjaya(true);
-            setStatusHantar('');
-            
-            // Reset form selepas 3 saat
             setTimeout(() => {
                 setBerjaya(false);
                 setSubjekDipilih('');
                 setRating(0);
                 setKomen('');
             }, 3000);
-            
-        } catch (error) {
-            console.error("Ralat menghantar penilaian:", error);
-            alert("Gagal menghantar penilaian. Sila cuba lagi.");
-            setStatusHantar('');
+        } catch {
+            setFormError('Gagal menghantar penilaian. Sila cuba lagi.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    if (!user) return null;
+    const activeRating = hoverRating || rating;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
-            {/* Header */}
-            <div className="text-center bg-gradient-to-br from-blue-600 to-indigo-800 p-10 rounded-3xl shadow-lg text-white">
-                <div className="inline-flex items-center justify-center p-3 bg-white/20 rounded-full mb-4 backdrop-blur-sm">
-                    <Star className="text-yellow-300" size={32} fill="currentColor" />
+        <div className="max-w-3xl mx-auto space-y-6 pb-10">
+
+            {/* ── HERO BANNER ── */}
+            <div className="rounded-3xl overflow-hidden" style={{ background: '#002060' }}>
+                <div className="px-10 py-9 flex items-center justify-between gap-6">
+                    <div>
+                        <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                            PORTAL PENILAIAN KURSUS
+                        </p>
+                        <h1 className="text-white font-extrabold tracking-tight mt-2" style={{ fontSize: 26 }}>
+                            Nilai Pengalaman Pembelajaran Anda
+                        </h1>
+                        <p className="text-white/35 text-sm mt-2 leading-relaxed max-w-md">
+                            Maklum balas anda membantu pihak pengurusan meningkatkan kualiti akademik fakulti.
+                        </p>
+                    </div>
+                    <Star size={64} className="flex-shrink-0 hidden sm:block"
+                        style={{ color: '#C9A227', opacity: 0.25 }} fill="currentColor" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">Penilaian Kursus FTSM</h1>
-                <p className="text-blue-100 font-medium max-w-xl mx-auto">
-                    Suara anda penting. Nilai kursus yang telah anda ambil untuk membantu pihak pengurusan meningkatkan kualiti akademik fakulti.
-                </p>
             </div>
 
-            {/* Borang Penilaian */}
+            {/* ── CONTENT ── */}
             {loading ? (
                 <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#002060]" />
+                </div>
+            ) : fetchError ? (
+                <div className="px-5 py-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                    {fetchError}
+                </div>
+            ) : senaraiSubjek.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <BookOpen size={40} className="text-gray-200" />
+                    <p className="text-gray-400 text-sm text-center">
+                        Anda belum mendaftar apa-apa kursus.<br />
+                        Daftar kursus terlebih dahulu untuk membuat penilaian.
+                    </p>
+                    <button
+                        onClick={() => navigate('/tambah-kursus')}
+                        className="px-5 py-2.5 bg-[#002060] text-white text-sm font-bold rounded-xl hover:bg-[#003082] transition-colors"
+                    >
+                        + Daftar Kursus
+                    </button>
                 </div>
             ) : (
-                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden">
-                    
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden">
+
+                    {/* Success overlay */}
                     {berjaya && (
-                        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex flex-col items-center justify-center animate-in zoom-in duration-300">
-                            <CheckCircle size={80} className="text-emerald-500 mb-4" />
-                            <h2 className="text-2xl font-black text-gray-800">Terima Kasih!</h2>
-                            <p className="text-gray-500 font-medium mt-2 text-center max-w-sm">Maklum balas anda telah dihantar secara terus kepada Ketua Program FTSM.</p>
+                        <div className="absolute inset-0 bg-white/96 z-10 flex flex-col items-center justify-center gap-4">
+                            <CheckCircle size={72} className="text-emerald-500" />
+                            <div className="text-center">
+                                <h2 className="text-2xl font-black text-gray-800">Terima Kasih!</h2>
+                                <p className="text-gray-500 text-sm mt-1.5 max-w-xs mx-auto">
+                                    Maklum balas anda telah dihantar kepada Ketua Program FTSM.
+                                </p>
+                            </div>
                         </div>
                     )}
 
-                    <form onSubmit={handleHantarPenilaian} className="space-y-8">
-                        
-                        {/* Pilihan Subjek */}
+                    <form onSubmit={handleHantar} className="p-8 space-y-8">
+
+                        {/* Step 1 — Course select */}
                         <div className="space-y-3">
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                <BookOpen size={18} className="text-blue-500" />
-                                1. Pilih Kursus
+                            <label className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                <BookOpen size={14} className="text-[#002060]" />
+                                Langkah 1 — Pilih Kursus
                             </label>
-                            <select 
-                                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-700 font-medium cursor-pointer"
+                            <select
+                                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all text-sm text-gray-700 font-medium cursor-pointer"
                                 value={subjekDipilih}
-                                onChange={(e) => setSubjekDipilih(e.target.value)}
+                                onChange={(e) => { setSubjekDipilih(e.target.value); setFormError(''); }}
                             >
                                 <option value="" disabled>-- Sila pilih kursus yang ingin dinilai --</option>
-                                {senaraiSubjek.map((subjek, index) => (
-                                    <option key={index} value={subjek.kod_kursus}>
-                                        {subjek.kod_kursus} - {subjek.nama_kursus} (Sem {subjek.semester_diambil})
+                                {senaraiSubjek.map((s, i) => (
+                                    <option key={i} value={s.kod_kursus}>
+                                        {s.kod_kursus} — {s.nama_kursus} (Sem {s.semester_diambil})
                                     </option>
                                 ))}
                             </select>
-                            {senaraiSubjek.length === 0 && <p className="text-xs text-red-500 font-medium mt-1">Anda belum mendaftar apa-apa kursus dalam sistem.</p>}
+
+                            {/* Selected course info card */}
+                            {selectedCourse && (
+                                <div className="mt-2 p-4 rounded-xl flex items-start gap-3"
+                                    style={{ background: 'rgba(0,32,96,0.04)', border: '1px solid rgba(0,32,96,0.1)' }}>
+                                    <div className="p-2 rounded-lg flex-shrink-0"
+                                        style={{ background: 'rgba(0,32,96,0.08)' }}>
+                                        <BookOpen size={14} className="text-[#002060]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-mono font-bold text-[#002060]">{selectedCourse.kod_kursus}</p>
+                                        <p className="text-sm font-semibold text-gray-800 mt-0.5">{selectedCourse.nama_kursus}</p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Semester {selectedCourse.semester_diambil}
+                                            &ensp;·&ensp; {selectedCourse.jam_kredit} kredit
+                                            &ensp;·&ensp; Gred:&nbsp;
+                                            <span className="font-bold text-gray-600">{selectedCourse.gred ?? '—'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Rating Bintang */}
-                        <div className="space-y-4">
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                <Star size={18} className="text-blue-500" />
-                                2. Berikan Rating Anda
+                        {/* Step 2 — Star rating */}
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                <Star size={14} className="text-[#002060]" />
+                                Langkah 2 — Berikan Rating
                             </label>
-                            <div className="flex gap-2 justify-center py-6 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="flex gap-2 justify-center py-7 bg-gray-50 rounded-2xl border border-gray-100">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <button
                                         key={star}
                                         type="button"
-                                        className="transition-transform hover:scale-110 focus:outline-none"
-                                        onClick={() => setRating(star)}
+                                        className="transition-transform hover:scale-110 focus:outline-none active:scale-95"
+                                        onClick={() => { setRating(star); setFormError(''); }}
                                         onMouseEnter={() => setHoverRating(star)}
                                         onMouseLeave={() => setHoverRating(0)}
+                                        aria-label={`${star} bintang`}
                                     >
-                                        <Star 
-                                            size={48} 
-                                            className={`transition-colors duration-200 ${
-                                                star <= (hoverRating || rating) ? "text-yellow-400" : "text-gray-200"
-                                            }`} 
-                                            fill={star <= (hoverRating || rating) ? "currentColor" : "none"}
+                                        <Star
+                                            size={46}
+                                            className={`transition-colors duration-150 ${
+                                                star <= activeRating ? 'text-[#C9A227]' : 'text-gray-200'
+                                            }`}
+                                            fill={star <= activeRating ? 'currentColor' : 'none'}
                                         />
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-center text-sm font-bold text-gray-400 uppercase tracking-widest">
-                                {rating === 1 && "Sangat Mengecewakan"}
-                                {rating === 2 && "Kurang Memuaskan"}
-                                {rating === 3 && "Sederhana Baik"}
-                                {rating === 4 && "Sangat Baik"}
-                                {rating === 5 && "Cemerlang!"}
+                            <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 h-4">
+                                {activeRating > 0 ? RATING_LABEL[activeRating] : 'Sila pilih rating anda'}
                             </p>
                         </div>
 
-                        {/* Ruangan Komen */}
+                        {/* Step 3 — Comment */}
                         <div className="space-y-3">
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                <MessageSquare size={18} className="text-blue-500" />
-                                3. Ulasan / Komen Tambahan
+                            <label className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                <MessageSquare size={14} className="text-[#002060]" />
+                                Langkah 3 — Ulasan / Komen
                             </label>
-                            <textarea 
-                                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none min-h-[150px]"
-                                placeholder="Apakah pendapat anda tentang silibus kursus ini? Adakah ia sukar difahami atau sangat menyeronokkan?"
+                            <textarea
+                                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all resize-none min-h-[140px] text-sm text-gray-700"
+                                placeholder="Apakah pendapat anda tentang silibus kursus ini? Adakah ia sukar difahami atau sangat membantu?"
                                 value={komen}
-                                onChange={(e) => setKomen(e.target.value)}
-                            ></textarea>
+                                maxLength={500}
+                                onChange={(e) => { setKomen(e.target.value); setFormError(''); }}
+                            />
+                            <div className="flex justify-between items-center">
+                                {komen.length > 0 && komen.length < 20 ? (
+                                    <p className="text-xs text-red-400 font-medium">Minimum 20 aksara diperlukan</p>
+                                ) : (
+                                    <span />
+                                )}
+                                <p className={`text-xs font-medium ml-auto ${komen.length >= 480 ? 'text-amber-500' : 'text-gray-400'}`}>
+                                    {komen.length} / 500
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Butang Hantar */}
-                        <button 
-                            type="submit" 
-                            disabled={statusHantar === 'Menghantar...' || !subjekDipilih}
-                            className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/30 disabled:opacity-70 disabled:shadow-none active:scale-[0.98]"
+                        {/* Inline form error */}
+                        {formError && (
+                            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                                {formError}
+                            </div>
+                        )}
+
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={submitting || !subjekDipilih || rating === 0}
+                            className="w-full flex items-center justify-center gap-2.5 text-white py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ background: '#002060' }}
                         >
-                            <Send size={20} />
-                            {statusHantar || 'Hantar Penilaian Subjek'}
+                            <Send size={16} />
+                            {submitting ? 'Menghantar...' : 'Hantar Penilaian Kursus'}
                         </button>
+
                     </form>
                 </div>
             )}
