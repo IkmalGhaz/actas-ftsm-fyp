@@ -1,178 +1,325 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, TrendingUp, Award, BookOpen } from 'lucide-react';
+import { Users, MessageSquare, Search, ArrowUpDown, Download } from 'lucide-react';
+
+const DIST_TIERS = [
+    { label: 'Anugerah Dekan',  min: 3.67, max: Infinity, bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-50' },
+    { label: 'Kepujian Tinggi', min: 3.00, max: 3.67,    bg: 'bg-blue-500',    text: 'text-blue-700',    light: 'bg-blue-50'    },
+    { label: 'Kepujian',        min: 2.67, max: 3.00,    bg: 'bg-sky-400',     text: 'text-sky-700',     light: 'bg-sky-50'     },
+    { label: 'Lulus',           min: 2.00, max: 2.67,    bg: 'bg-amber-400',   text: 'text-amber-700',   light: 'bg-amber-50'   },
+    { label: 'Amaran Akademik', min: 0,    max: 2.00,    bg: 'bg-red-500',     text: 'text-red-700',     light: 'bg-red-50'     },
+];
+
+function cgpaBadge(cgpa) {
+    const v = parseFloat(cgpa);
+    if (v >= 3.67) return 'bg-emerald-100 text-emerald-700';
+    if (v >= 3.00) return 'bg-blue-100 text-blue-700';
+    if (v >= 2.00) return 'bg-yellow-100 text-yellow-700';
+    if (v >  0)   return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-500';
+}
 
 function DashboardKP() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
-    
-    const [kpData, setKpData] = useState({
-        jumlah_pelajar: 0,
-        purata_cgpa_fakulti: "0.00",
-        senarai_pelajar: []
-    });
-    const [loading, setLoading] = useState(true);
+
+    const [kpData, setKpData]     = useState({ jumlah_pelajar: 0, purata_cgpa_fakulti: '0.00', senarai_pelajar: [] });
+    const [loading, setLoading]   = useState(true);
+    const [error, setError]       = useState('');
+    const [search, setSearch]     = useState('');
+    const [sortDir, setSortDir]   = useState('desc');
+    const [csvError, setCsvError] = useState('');
 
     useEffect(() => {
-        // Keselamatan: Pastikan hanya KP sahaja yang boleh masuk halaman ini
-        if (!user || user.role !== 'kp') {
-            navigate('/');
-            return;
+        if (!user || user.role !== 'kp') { navigate('/'); return; }
+        axios.get('http://localhost:5000/api/kp/analitik-pelajar')
+            .then(res => setKpData(res.data))
+            .catch(() => setError('Gagal memuat data analitik. Sila muat semula halaman.'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (!user) return null;
+
+    const pelajarList = kpData.senarai_pelajar;
+    const total       = pelajarList.length;
+    const avgCgpa     = parseFloat(kpData.purata_cgpa_fakulti) || 0;
+    const dekanCount  = pelajarList.filter(p => parseFloat(p.cgpa) >= 3.67).length;
+    const amaranCount = pelajarList.filter(p => parseFloat(p.cgpa) < 2.00 && parseFloat(p.cgpa) > 0).length;
+
+    const distribution = useMemo(() => DIST_TIERS.map(t => {
+        const count = pelajarList.filter(p => {
+            const v = parseFloat(p.cgpa);
+            return v >= t.min && v < t.max;
+        }).length;
+        return { ...t, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 };
+    }), [pelajarList, total]);
+
+    const filteredPelajar = useMemo(() => {
+        let list = [...pelajarList];
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            list = list.filter(p =>
+                p.nama.toLowerCase().includes(q) ||
+                p.no_matrik.toLowerCase().includes(q) ||
+                (p.program ?? '').toLowerCase().includes(q)
+            );
         }
+        list.sort((a, b) => {
+            const diff = parseFloat(a.cgpa) - parseFloat(b.cgpa);
+            return sortDir === 'desc' ? -diff : diff;
+        });
+        return list;
+    }, [pelajarList, search, sortDir]);
 
-        const fetchAnalitikFakulti = async () => {
-            try {
-                const response = await axios.get('http://localhost:5000/api/kp/analitik-pelajar');
-                setKpData(response.data);
-            } catch (error) {
-                console.error("Gagal menarik data analitik KP:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAnalitikFakulti();
-    }, [user, navigate]);
-
-    // FUNGSI MUAT TURUN CSV (Diletakkan sekali sahaja di sini)
     const muatTurunCSV = () => {
-        if (!kpData.senarai_pelajar || kpData.senarai_pelajar.length === 0) {
-            return alert("Tiada data untuk dimuat turun");
-        }
-        
-        const headers = ["No Matrik", "Nama Pelajar", "Program", "Kredit Terkumpul", "PNGK"];
-        const rows = kpData.senarai_pelajar.map(p => [
+        if (!pelajarList.length) { setCsvError('Tiada data pelajar untuk dimuat turun.'); return; }
+        setCsvError('');
+        const headers = ['No Matrik', 'Nama Pelajar', 'Program', 'Kredit Terkumpul', 'PNGK'];
+        const rows    = pelajarList.map(p => [
             p.no_matrik,
             `"${p.nama.toUpperCase()}"`,
             `"${p.program}"`,
             p.totalKredit,
-            p.cgpa
+            p.cgpa,
         ]);
-        
-        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-            + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-            
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Laporan_Keseluruhan_Pelajar_FTSM.csv`);
+        const csv  = 'data:text/csv;charset=utf-8,﻿' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const link = document.createElement('a');
+        link.href     = encodeURI(csv);
+        link.download = 'Laporan_Keseluruhan_Pelajar_FTSM.csv';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
-    if (!user) return null;
-
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
-            {/* Header KP */}
-            <div>
-                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Papan Pemuka Ketua Program</h1>
-                <p className="text-gray-500 mt-2 font-medium">Selamat datang, {user.nama}. Berikut adalah analitik keseluruhan prestasi pelajar.</p>
-            </div>
+        <div className="max-w-7xl mx-auto space-y-6 pb-10">
 
             {loading ? (
                 <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#002060]" />
+                </div>
+            ) : error ? (
+                <div className="px-5 py-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                    {error}
                 </div>
             ) : (
                 <>
-                    {/* Ringkasan Analitik Helang */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Kad 1: Jumlah Pelajar */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
-                            <div className="p-4 bg-blue-50 text-blue-600 rounded-xl">
-                                <Users size={32} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Jumlah Pelajar</p>
-                                <p className="text-3xl font-extrabold text-gray-900">{kpData.jumlah_pelajar}</p>
-                            </div>
-                        </div>
+                    {/* ── HERO BANNER ── */}
+                    <div className="rounded-3xl overflow-hidden" style={{ background: '#002060' }}>
+                        <div className="px-10 py-9 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
 
-                        {/* Kad 2: Purata PNGK Fakulti */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
-                            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl">
-                                <TrendingUp size={32} />
-                            </div>
+                            {/* Left — identity */}
                             <div>
-                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Purata PNGK</p>
-                                <p className="text-3xl font-extrabold text-emerald-600">{kpData.purata_cgpa_fakulti}</p>
-                            </div>
-                        </div>
-
-                        {/* Kad 3: Status Pemantauan */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
-                            <div className="p-4 bg-purple-50 text-purple-600 rounded-xl">
-                                <Award size={32} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Pelajar Cemerlang</p>
-                                <p className="text-3xl font-extrabold text-gray-900">
-                                    {kpData.senarai_pelajar.filter(p => parseFloat(p.cgpa) >= 3.67).length}
+                                <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                                    PAPAN PEMUKA KETUA PROGRAM
+                                </p>
+                                <h1 className="text-white font-extrabold tracking-tight mt-2" style={{ fontSize: 28 }}>
+                                    Selamat datang, {user.nama.split(' ')[0]}
+                                </h1>
+                                <p className="text-white/30 text-sm mt-1 font-medium">
+                                    {user.program ?? 'FTSM UKM'}&ensp;·&ensp;Analitik Keseluruhan Pelajar
                                 </p>
                             </div>
-                        </div>
 
-                        {/* Kad 4: Perlukan Perhatian */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
-                            <div className="p-4 bg-red-50 text-red-600 rounded-xl">
-                                <BookOpen size={32} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider">Perlu Perhatian</p>
-                                <p className="text-3xl font-extrabold text-red-600">
-                                    {kpData.senarai_pelajar.filter(p => parseFloat(p.cgpa) < 2.00).length}
-                                </p>
+                            <div className="hidden lg:block self-stretch w-px bg-white/10" />
+
+                            {/* Right — key metrics */}
+                            <div className="flex flex-wrap items-center gap-5">
+                                {/* Big PNGK */}
+                                <div className="text-center">
+                                    <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                                        PURATA PNGK FAKULTI
+                                    </p>
+                                    <p className="text-white font-black tracking-tight mt-1"
+                                        style={{ fontFamily: "'DM Serif Display', serif", fontSize: 68, lineHeight: 1 }}>
+                                        {avgCgpa.toFixed(2)}
+                                    </p>
+                                </div>
+
+                                {/* Stat chips */}
+                                <div className="flex flex-col gap-2">
+                                    <div className="px-5 py-2.5 rounded-2xl text-center"
+                                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <p style={{ color: '#C9A227', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em' }}>
+                                            JUMLAH PELAJAR
+                                        </p>
+                                        <p className="text-white text-2xl font-black mt-0.5">{total}</p>
+                                    </div>
+                                    <div className="px-5 py-2.5 rounded-2xl text-center"
+                                        style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                        <p style={{ color: '#6ee7b7', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em' }}>
+                                            ANUGERAH DEKAN
+                                        </p>
+                                        <p className="text-white text-2xl font-black mt-0.5">{dekanCount}</p>
+                                    </div>
+                                    <div className="px-5 py-2.5 rounded-2xl text-center"
+                                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                        <p style={{ color: '#fca5a5', fontSize: 9, fontWeight: 700, letterSpacing: '0.18em' }}>
+                                            PERLU PERHATIAN
+                                        </p>
+                                        <p className="text-white text-2xl font-black mt-0.5">{amaranCount}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Jadual Senarai Pelajar FTSM */}
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-900">Senarai Prestasi Pelajar</h3>
-                            <button onClick={muatTurunCSV} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">
-                                Muat Turun Laporan (CSV)
-                            </button>
+                    {/* ── PNGK DISTRIBUTION ── */}
+                    {total > 0 && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+                            <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-5">
+                                Taburan Prestasi Pelajar
+                            </h3>
+                            {/* Stacked bar */}
+                            <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                                {distribution.map((tier, i) =>
+                                    tier.pct > 0 && (
+                                        <div key={i} className={`${tier.bg} transition-all`}
+                                            style={{ width: `${tier.pct}%` }}
+                                            title={`${tier.label}: ${tier.count} pelajar (${tier.pct}%)`}
+                                        />
+                                    )
+                                )}
+                            </div>
+                            {/* Legend */}
+                            <div className="flex flex-wrap gap-x-6 gap-y-2.5 mt-5">
+                                {distribution.map((tier, i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <span className={`inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0 ${tier.bg}`} />
+                                        <span className="text-xs text-gray-500 font-medium">
+                                            {tier.label}
+                                        </span>
+                                        <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded ${tier.light} ${tier.text}`}>
+                                            {tier.count}
+                                        </span>
+                                        <span className="text-xs text-gray-300">({tier.pct}%)</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        
+                    )}
+
+                    {/* ── STUDENT TABLE ── */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {/* Table toolbar */}
+                        <div className="px-7 py-5 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Senarai Prestasi Pelajar
+                                </h3>
+                                {search.trim() && (
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        {filteredPelajar.length} daripada {total} pelajar
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Search */}
+                                <div className="relative">
+                                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        placeholder="Cari nama, matrik, program..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        className="pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg w-52 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all"
+                                    />
+                                </div>
+                                {/* Sort toggle */}
+                                <button
+                                    onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    <ArrowUpDown size={12} />
+                                    PNGK {sortDir === 'desc' ? '↓' : '↑'}
+                                </button>
+                                {/* CSV download */}
+                                <button
+                                    onClick={muatTurunCSV}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white rounded-lg transition-opacity hover:opacity-90"
+                                    style={{ background: '#002060' }}
+                                >
+                                    <Download size={13} />
+                                    Muat Turun CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        {csvError && (
+                            <div className="px-7 py-2.5 bg-red-50 border-b border-red-100 text-xs text-red-600 font-medium">
+                                {csvError}
+                            </div>
+                        )}
+
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                                        <th className="p-4 rounded-tl-lg font-semibold">No. Matrik</th>
-                                        <th className="p-4 font-semibold">Nama Pelajar</th>
-                                        <th className="p-4 font-semibold">Program</th>
-                                        <th className="p-4 font-semibold text-center">Kredit Terkumpul</th>
-                                        <th className="p-4 rounded-tr-lg font-semibold text-center">PNGK</th>
+                                    <tr className="bg-gray-50 text-[11px] text-gray-400 uppercase tracking-widest">
+                                        <th className="px-6 py-3 font-semibold">No. Matrik</th>
+                                        <th className="px-4 py-3 font-semibold">Nama Pelajar</th>
+                                        <th className="px-4 py-3 font-semibold">Program</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Kredit</th>
+                                        <th className="px-4 py-3 font-semibold text-center">PNGK</th>
+                                        <th className="px-4 py-3 font-semibold text-center">Tindakan</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
-                                    {kpData.senarai_pelajar.map((pelajar, index) => (
-                                        <tr key={index} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-4 font-bold text-blue-600">{pelajar.no_matrik}</td>
-                                            <td className="p-4 font-medium">{pelajar.nama}</td>
-                                            <td className="p-4 text-gray-500">{pelajar.program}</td>
-                                            <td className="p-4 text-center font-medium">{pelajar.totalKredit}</td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-3 py-1 rounded-md font-extrabold text-xs inline-block min-w-[50px] text-center ${
-                                                    parseFloat(pelajar.cgpa) >= 3.67 ? 'bg-emerald-100 text-emerald-700' :
-                                                    parseFloat(pelajar.cgpa) >= 3.00 ? 'bg-blue-100 text-blue-700' :
-                                                    parseFloat(pelajar.cgpa) >= 2.00 ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-red-100 text-red-700'
-                                                }`}>
-                                                    {pelajar.cgpa}
+                                <tbody className="divide-y divide-gray-50 text-sm text-gray-700">
+                                    {filteredPelajar.map((p, i) => (
+                                        <tr key={i} className="hover:bg-gray-50/60 transition-colors">
+                                            <td className="px-6 py-3.5 font-mono font-bold text-[#002060] text-xs">
+                                                {p.no_matrik}
+                                            </td>
+                                            <td className="px-4 py-3.5 font-medium max-w-[200px] truncate">
+                                                {p.nama}
+                                            </td>
+                                            <td className="px-4 py-3.5">
+                                                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-medium whitespace-nowrap">
+                                                    {p.program ?? '—'}
                                                 </span>
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center text-gray-500">
+                                                {p.totalKredit} 
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center">
+                                                <span className={`px-2.5 py-1 rounded-md font-extrabold text-xs inline-block min-w-[46px] text-center ${cgpaBadge(p.cgpa)}`}>
+                                                    {p.cgpa}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3.5 text-center">
+                                                <button
+                                                    onClick={() => navigate('/kp/maklum-balas')}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors"
+                                                    style={{ color: '#002060', borderColor: 'rgba(0,32,96,0.2)' }}
+                                                    onMouseEnter={e => { e.currentTarget.style.background = '#002060'; e.currentTarget.style.color = 'white'; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#002060'; }}
+                                                >
+                                                    <MessageSquare size={11} />
+                                                    Maklum Balas
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    
-                                    {kpData.senarai_pelajar.length === 0 && (
+
+                                    {filteredPelajar.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="p-10 text-center text-gray-400 font-medium">
-                                                Tiada rekod pelajar dijumpai di dalam pangkalan data.
+                                            <td colSpan="6">
+                                                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                                    <Users size={36} className="text-gray-200" />
+                                                    <p className="text-gray-400 text-sm font-medium text-center">
+                                                        {search.trim()
+                                                            ? `Tiada pelajar sepadan dengan "${search}".`
+                                                            : 'Tiada rekod pelajar dijumpai dalam pangkalan data.'}
+                                                    </p>
+                                                    {search.trim() && (
+                                                        <button
+                                                            onClick={() => setSearch('')}
+                                                            className="text-xs font-bold text-[#002060] hover:underline"
+                                                        >
+                                                            Padam carian
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     )}
