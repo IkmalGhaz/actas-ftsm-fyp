@@ -1,234 +1,492 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, X, Search, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+
+const PROGRAMS = [
+    'Sains Komputer',
+    'Teknologi Maklumat',
+    'Kejuruteraan Perisian Multimedia',
+    'Kejuruteraan Perisian Maklumat',
+];
+
+const DEFAULT_FORM = { no_matrik: '', nama: '', program: 'Sains Komputer', katalaluan: '123' };
+
+function getInitials(nama) {
+    return (nama ?? '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+function programBadge(program) {
+    if (!program) return { bg: 'bg-gray-100', text: 'text-gray-600' };
+    const p = program.toLowerCase();
+    if (p.includes('sains'))      return { bg: 'bg-teal-100',   text: 'text-teal-700'   };
+    if (p.includes('teknologi'))  return { bg: 'bg-blue-100',   text: 'text-blue-700'   };
+    if (p.includes('multimedia')) return { bg: 'bg-indigo-100', text: 'text-indigo-700' };
+    return                                { bg: 'bg-purple-100', text: 'text-purple-700' };
+}
 
 function UrusDataPelajar() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
-    
-    const [senaraiPelajar, setSenaraiPelajar] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    // State untuk borang (Modal)
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({
-        no_matrik: '',
-        nama: '',
-        program: 'Sains Komputer',
-        katalaluan: '123' // Default password
-    });
 
-    // Fungsi Tarik Data (Read)
-    const fetchPelajar = async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/pegawai/pelajar');
-            setSenaraiPelajar(response.data);
-        } catch (error) {
-            console.error("Gagal menarik data pelajar:", error);
-        } finally {
-            setLoading(false);
-        }
+    const [senaraiPelajar, setSenaraiPelajar] = useState([]);
+    const [loading, setLoading]               = useState(true);
+    const [fetchError, setFetchError]         = useState('');
+    const [carian, setCarian]                 = useState('');
+
+    const [isModalOpen, setIsModalOpen]       = useState(false);
+    const [isEditing, setIsEditing]           = useState(false);
+    const [formData, setFormData]             = useState(DEFAULT_FORM);
+    const [showPassword, setShowPassword]     = useState(false);
+    const [submitting, setSubmitting]         = useState(false);
+    const [formError, setFormError]           = useState('');
+
+    const [confirmDelete, setConfirmDelete]   = useState(null);
+    const [deleting, setDeleting]             = useState(false);
+    const [deleteError, setDeleteError]       = useState('');
+
+    const [toast, setToast]                   = useState(null);
+
+    const showToast = (type, msg) => {
+        setToast({ type, msg });
+        setTimeout(() => setToast(null), 3500);
+    };
+
+    const fetchPelajar = () => {
+        setFetchError('');
+        return axios.get('http://localhost:5000/api/pegawai/pelajar')
+            .then(res => setSenaraiPelajar(res.data || []))
+            .catch(() => setFetchError('Gagal memuat senarai pelajar. Sila muat semula halaman.'))
+            .finally(() => setLoading(false));
     };
 
     useEffect(() => {
-        if (!user || user.role !== 'pegawai') {
-            navigate('/');
-            return;
-        }
+        if (!user || user.role !== 'pegawai') { navigate('/'); return; }
         fetchPelajar();
-    }, [user, navigate]);
+    }, []);
 
-    // Buka Modal Tambah
+    if (!user) return null;
+
+    const pelajarDitapis = useMemo(() => {
+        if (!carian.trim()) return senaraiPelajar;
+        const q = carian.toLowerCase();
+        return senaraiPelajar.filter(p =>
+            p.no_matrik.toLowerCase().includes(q) ||
+            p.nama.toLowerCase().includes(q) ||
+            (p.program ?? '').toLowerCase().includes(q)
+        );
+    }, [senaraiPelajar, carian]);
+
     const bukaModalTambah = () => {
-        setFormData({ 
-            no_matrik: '', 
-            nama: '', 
-            program: 'Sains Komputer', 
-            katalaluan: '123' 
-        });
+        setFormData(DEFAULT_FORM);
+        setFormError('');
+        setShowPassword(false);
         setIsEditing(false);
         setIsModalOpen(true);
     };
 
-    // Buka Modal Kemas Kini (Update)
     const bukaModalEdit = (pelajar) => {
-        setFormData(pelajar);
+        setFormData({ ...pelajar });
+        setFormError('');
+        setShowPassword(false);
         setIsEditing(true);
         setIsModalOpen(true);
     };
 
-    // Fungsi Simpan (Create & Update)
+    const tutupModal = () => {
+        setIsModalOpen(false);
+        setFormError('');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError('');
+        setSubmitting(true);
         try {
             if (isEditing) {
-                // Update
                 await axios.put(`http://localhost:5000/api/pegawai/pelajar/${formData.no_matrik}`, formData);
-                alert("Berjaya dikemas kini!");
+                showToast('success', `Rekod ${formData.nama} berjaya dikemas kini.`);
             } else {
-                // Create
                 await axios.post('http://localhost:5000/api/pegawai/pelajar', formData);
-                alert("Berjaya ditambah!");
+                showToast('success', `Pelajar ${formData.nama} berjaya didaftarkan.`);
             }
             setIsModalOpen(false);
-            fetchPelajar(); // Segar semula jadual
-        } catch (error) {
-            alert("Ralat! Mungkin No Matrik sudah wujud.");
-            console.error(error);
+            fetchPelajar();
+        } catch (err) {
+            setFormError(err.response?.data?.error ?? 'Ralat tidak dijangka. Sila cuba lagi.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    // Fungsi Padam (Delete)
     const handlePadam = async (no_matrik) => {
-        if (window.confirm(`Adakah anda pasti mahu memadam rekod matrik ${no_matrik}? Semua gred berkaitan akan turut terpadam.`)) {
-            try {
-                await axios.delete(`http://localhost:5000/api/pegawai/pelajar/${no_matrik}`);
-                alert("Data dipadam!");
-                fetchPelajar();
-            } catch (error) {
-                alert("Gagal memadam data.");
-                console.error(error);
-            }
+        setDeleting(true);
+        setDeleteError('');
+        try {
+            await axios.delete(`http://localhost:5000/api/pegawai/pelajar/${no_matrik}`);
+            setConfirmDelete(null);
+            showToast('success', `Rekod ${no_matrik} berjaya dipadam.`);
+            fetchPelajar();
+        } catch {
+            setDeleteError('Gagal memadam. Cuba lagi.');
+            setDeleting(false);
         }
     };
-
-    if (!user) return null;
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-                        <Users className="text-blue-600" size={32} />
-                        Urus Data Pelajar
-                    </h1>
-                    <p className="text-gray-500 mt-2 font-medium">Modul Pegawai: Daftar, kemas kini, dan padam rekod pelajar.</p>
+        <div className="max-w-7xl mx-auto space-y-6 pb-10">
+
+            {/* ── HERO BANNER ── */}
+            <div className="rounded-3xl overflow-hidden" style={{ background: '#002060' }}>
+                <div className="px-10 py-9 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                    <div>
+                        <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                            PENGURUSAN REKOD — PEGAWAI FTSM
+                        </p>
+                        <h1 className="text-white font-extrabold tracking-tight mt-2" style={{ fontSize: 28 }}>
+                            Urus Data Pelajar
+                        </h1>
+                        <p className="text-white/30 text-sm mt-1 font-medium">
+                            Daftar, kemas kini dan padam rekod akademik pelajar FTSM.
+                        </p>
+                    </div>
+
+                    <div className="hidden lg:block self-stretch w-px bg-white/10" />
+
+                    <div className="flex items-center gap-5">
+                        <div className="text-center">
+                            <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                                JUMLAH PELAJAR
+                            </p>
+                            <p className="text-white font-black tracking-tight mt-1"
+                                style={{ fontFamily: "'DM Serif Display', serif", fontSize: 64, lineHeight: 1 }}>
+                                {loading ? '—' : senaraiPelajar.length}
+                            </p>
+                            <p className="text-white/25 text-xs mt-1 font-medium">berdaftar</p>
+                        </div>
+
+                        <button
+                            onClick={bukaModalTambah}
+                            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 hover:brightness-110"
+                            style={{ background: '#C9A227', color: '#002060' }}
+                        >
+                            <Plus size={16} />
+                            Daftar Pelajar
+                        </button>
+                    </div>
                 </div>
-                
-                <button 
-                    onClick={bukaModalTambah}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95"
-                >
-                    <Plus size={20} /> Tambah Pelajar
-                </button>
             </div>
 
-            {/* Jadual Utama */}
-            {loading ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-            ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                                    <th className="p-5 font-semibold">No. Matrik</th>
-                                    <th className="p-5 font-semibold">Nama Pelajar</th>
-                                    <th className="p-5 font-semibold">Program / Jurusan</th>
-                                    <th className="p-5 font-semibold text-center">Tindakan</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
-                                {senaraiPelajar.map((pelajar) => (
-                                    <tr key={pelajar.no_matrik} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="p-5 font-bold text-blue-600">{pelajar.no_matrik}</td>
-                                        <td className="p-5 font-medium uppercase">{pelajar.nama}</td>
-                                        <td className="p-5 text-gray-500 text-xs font-semibold uppercase">{pelajar.program}</td>
-                                        <td className="p-5 text-center space-x-3">
-                                            <button onClick={() => bukaModalEdit(pelajar)} className="text-emerald-500 hover:text-emerald-700 font-bold px-2 py-1 bg-emerald-50 rounded-lg transition-colors">
-                                                <Edit size={16} className="inline mr-1" /> Edit
-                                            </button>
-                                            <button onClick={() => handlePadam(pelajar.no_matrik)} className="text-red-500 hover:text-red-700 font-bold px-2 py-1 bg-red-50 rounded-lg transition-colors">
-                                                <Trash2 size={16} className="inline mr-1" /> Padam
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+            {/* ── TOAST ── */}
+            {toast && (
+                <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-medium border ${
+                    toast.type === 'success'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-red-50 border-red-200 text-red-700'
+                }`}>
+                    {toast.type === 'success'
+                        ? <CheckCircle size={15} className="flex-shrink-0" />
+                        : <AlertCircle size={15} className="flex-shrink-0" />
+                    }
+                    {toast.msg}
                 </div>
             )}
 
-            {/* Modal Tambah / Edit */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 animate-in fade-in">
-                    <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h2 className="text-xl font-extrabold text-gray-800">
-                                {isEditing ? 'Kemas Kini Rekod Pelajar' : 'Daftar Pelajar Baharu'}
-                            </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-red-500 transition-colors">
-                                <X size={24} />
-                            </button>
+            {fetchError && (
+                <div className="flex items-center gap-2.5 px-5 py-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                    <AlertCircle size={15} className="flex-shrink-0" />
+                    {fetchError}
+                </div>
+            )}
+
+            {/* ── TABLE CARD ── */}
+            {!fetchError && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+                    {/* Toolbar */}
+                    <div className="px-7 py-5 border-b border-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="relative">
+                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Cari nama, matrik, atau program..."
+                                className="pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-[#002060] text-sm text-gray-700 transition-all w-80"
+                                value={carian}
+                                onChange={(e) => setCarian(e.target.value)}
+                            />
                         </div>
-                        
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">No Matrik</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    disabled={isEditing} 
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 uppercase bg-gray-50/50" 
-                                    value={formData.no_matrik} 
-                                    onChange={(e) => setFormData({...formData, no_matrik: e.target.value.toUpperCase()})}
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Nama Penuh</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none uppercase bg-gray-50/50" 
-                                    value={formData.nama} 
-                                    onChange={(e) => setFormData({...formData, nama: e.target.value})}
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Program / Jurusan Rasmi FTSM</label>
-                                <select
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#003082] outline-none bg-white"
-                                    value={formData.program}
-                                    onChange={(e) => setFormData({...formData, program: e.target.value})}
+                        {!loading && (
+                            <p className="text-xs text-gray-400 font-medium">
+                                {carian
+                                    ? `${pelajarDitapis.length} drp ${senaraiPelajar.length} rekod`
+                                    : `${senaraiPelajar.length} rekod`
+                                }
+                            </p>
+                        )}
+                    </div>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="animate-spin rounded-full h-7 w-7 border-b-2"
+                                style={{ borderColor: '#002060' }} />
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-[11px] font-bold uppercase tracking-widest text-gray-400 bg-gray-50 border-b border-gray-100">
+                                        <th className="pl-7 pr-3 py-4 w-12">Bil.</th>
+                                        <th className="px-4 py-4">Pelajar</th>
+                                        <th className="px-4 py-4">No. Matrik</th>
+                                        <th className="px-4 py-4">Program</th>
+                                        <th className="px-4 py-4 pr-7 text-right">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 text-sm">
+                                    {pelajarDitapis.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-7 py-16 text-center">
+                                                <Users size={30} className="text-gray-200 mx-auto mb-3" />
+                                                <p className="text-sm font-medium text-gray-400">
+                                                    {carian
+                                                        ? `Tiada pelajar sepadan dengan "${carian}".`
+                                                        : 'Tiada rekod pelajar dalam sistem.'
+                                                    }
+                                                </p>
+                                                {!carian && (
+                                                    <button
+                                                        onClick={bukaModalTambah}
+                                                        className="mt-4 text-sm font-bold px-4 py-2 rounded-xl text-white transition-colors active:scale-95"
+                                                        style={{ background: '#002060' }}
+                                                    >
+                                                        + Daftar Pelajar Pertama
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        pelajarDitapis.map((pelajar, i) => {
+                                            const isConfirming = confirmDelete === pelajar.no_matrik;
+                                            const badge = programBadge(pelajar.program);
+                                            return (
+                                                <tr
+                                                    key={pelajar.no_matrik}
+                                                    className={`transition-colors ${
+                                                        isConfirming ? 'bg-red-50/60' : 'hover:bg-gray-50/50'
+                                                    }`}
+                                                >
+                                                    <td className="pl-7 pr-3 py-3.5 text-xs font-mono text-gray-400">
+                                                        {String(i + 1).padStart(2, '0')}
+                                                    </td>
+
+                                                    <td className="px-4 py-3.5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black select-none text-white"
+                                                                style={{ background: isConfirming ? '#dc2626' : '#002060' }}
+                                                            >
+                                                                {getInitials(pelajar.nama)}
+                                                            </div>
+                                                            <span className="font-bold text-gray-800 uppercase text-xs tracking-wide">
+                                                                {pelajar.nama}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-4 py-3.5">
+                                                        <span className="font-mono font-bold text-xs" style={{ color: '#002060' }}>
+                                                            {pelajar.no_matrik}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="px-4 py-3.5">
+                                                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
+                                                            {pelajar.program}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="px-4 py-3.5 pr-7">
+                                                        {isConfirming ? (
+                                                            <div className="flex items-center justify-end gap-2 flex-wrap">
+                                                                {deleteError && (
+                                                                    <span className="text-xs text-red-600 font-medium">
+                                                                        {deleteError}
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-xs text-red-600 font-bold">
+                                                                    Padam rekod ini?
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handlePadam(pelajar.no_matrik)}
+                                                                    disabled={deleting}
+                                                                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 active:scale-95"
+                                                                >
+                                                                    {deleting ? 'Memadamkan...' : 'Ya, Padam'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setConfirmDelete(null); setDeleteError(''); }}
+                                                                    className="px-3 py-1.5 bg-white text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-100 border border-gray-200 transition-colors"
+                                                                >
+                                                                    Batal
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <button
+                                                                    onClick={() => bukaModalEdit(pelajar)}
+                                                                    className="p-2 rounded-lg text-gray-400 hover:text-[#002060] hover:bg-[rgba(0,32,96,0.06)] transition-all"
+                                                                    title="Kemas Kini"
+                                                                >
+                                                                    <Pencil size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setConfirmDelete(pelajar.no_matrik); setDeleteError(''); }}
+                                                                    className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                                                    title="Padam"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── MODAL ── */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+
+                        {/* Modal header */}
+                        <div className="px-7 py-6" style={{ background: '#002060' }}>
+                            <p style={{ color: '#C9A227', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em' }}>
+                                {isEditing ? 'KEMAS KINI REKOD PELAJAR' : 'DAFTAR PELAJAR BAHARU'}
+                            </p>
+                            <div className="flex items-start justify-between mt-1.5">
+                                <h2 className="text-white font-extrabold text-lg tracking-tight leading-tight">
+                                    {isEditing ? (formData.nama || 'Kemas Kini Pelajar') : 'Borang Pendaftaran'}
+                                </h2>
+                                <button
+                                    onClick={tutupModal}
+                                    className="text-white/40 hover:text-white transition-colors mt-0.5 flex-shrink-0"
                                 >
-                                    <optgroup label="Sains Komputer">
-                                        <option value="Sains Komputer">Sains Komputer</option>
-                                    </optgroup>
-                                    <optgroup label="Teknologi Maklumat">
-                                        <option value="Teknologi Maklumat">Teknologi Maklumat</option>
-                                    </optgroup>
-                                    <optgroup label="Kejuruteraan Perisian">
-                                        <option value="Kejuruteraan Perisian Multimedia">Kejuruteraan Perisian Multimedia</option>
-                                        <option value="Kejuruteraan Perisian Maklumat">Kejuruteraan Perisian Maklumat</option>
-                                    </optgroup>
-                                </select>
+                                    <X size={20} />
+                                </button>
                             </div>
-                            
-                            <div>
-                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Kata Laluan Akses</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50" 
-                                    value={formData.katalaluan} 
-                                    onChange={(e) => setFormData({...formData, katalaluan: e.target.value})}
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-7 space-y-5">
+
+                            {/* No Matrik */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                    No. Matrik
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    disabled={isEditing}
+                                    placeholder="Contoh: A200301234"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono font-bold text-gray-800 uppercase focus:outline-none focus:ring-2 focus:border-[#002060] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    value={formData.no_matrik}
+                                    onChange={(e) => setFormData({ ...formData, no_matrik: e.target.value.toUpperCase() })}
+                                />
+                                {isEditing && (
+                                    <p className="text-[10px] text-gray-400 font-medium">
+                                        No. Matrik tidak boleh ditukar selepas pendaftaran.
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Nama */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Nama Penuh
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Nama penuh pelajar"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:border-[#002060] transition-all uppercase"
+                                    value={formData.nama}
+                                    onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
                                 />
                             </div>
 
-                            <div className="pt-4 flex gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                            {/* Program */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Program Pengajian
+                                </label>
+                                <select
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:border-[#002060] transition-all cursor-pointer"
+                                    value={formData.program}
+                                    onChange={(e) => setFormData({ ...formData, program: e.target.value })}
+                                >
+                                    {PROGRAMS.map(p => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Kata Laluan */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Kata Laluan Akses
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        className="w-full px-4 py-3 pr-11 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:border-[#002060] transition-all"
+                                        value={formData.katalaluan}
+                                        onChange={(e) => setFormData({ ...formData, katalaluan: e.target.value })}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(v => !v)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Form error */}
+                            {formError && (
+                                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                                    <AlertCircle size={14} className="flex-shrink-0" />
+                                    {formError}
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={tutupModal}
+                                    className="flex-1 py-3 font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-sm"
+                                >
                                     Batal
                                 </button>
-                                <button type="submit" className="flex-1 py-2.5 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-md">
-                                    Simpan Data
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="flex-1 py-3 font-bold text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-sm"
+                                    style={{ background: '#002060' }}
+                                >
+                                    {submitting
+                                        ? 'Menyimpan...'
+                                        : isEditing ? 'Kemas Kini Rekod' : 'Daftar Pelajar'
+                                    }
                                 </button>
                             </div>
                         </form>
