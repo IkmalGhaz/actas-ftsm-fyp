@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { X, Mail, KeyRound, CheckCircle2 } from 'lucide-react';
 
 function ForgotPasswordModal({ onClose }) {
@@ -160,7 +160,10 @@ function Login() {
     const [noMatrik, setNoMatrik]     = useState('');
     const [katalaluan, setKatalaluan] = useState('');
     const [showForgot, setShowForgot] = useState(false);
+    const [loginError, setLoginError] = useState('');
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const resetSuccess = searchParams.get('reset') === 'success';
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -181,20 +184,7 @@ function Login() {
                 }
             }
         } catch (error) {
-            if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-                if (noMatrik.toUpperCase().startsWith('KP')) {
-                    localStorage.setItem('user', JSON.stringify({ nama: 'Dr. Rodziah', no_matrik: noMatrik, role: 'kp' }));
-                    navigate('/kp/dashboard');
-                } else if (noMatrik.toUpperCase().startsWith('P')) {
-                    localStorage.setItem('user', JSON.stringify({ nama: 'En. Afiq', no_matrik: noMatrik, role: 'pegawai' }));
-                    navigate('/pegawai/jana-laporan');
-                } else {
-                    localStorage.setItem('user', JSON.stringify({ nama: 'Ahmad Aliff', no_matrik: noMatrik || 'A123456', role: 'pelajar' }));
-                    navigate('/dashboard');
-                }
-            } else {
-                alert(error.response?.data?.message || 'Pelayan bermasalah');
-            }
+            setLoginError(error.response?.data?.message || 'Pelayan tidak dapat dihubungi. Pastikan server berjalan.');
         }
     };
 
@@ -236,6 +226,18 @@ function Login() {
 
                         {/* Form */}
                         <form className="mt-10 space-y-6" onSubmit={handleLogin}>
+                            {resetSuccess && (
+                                <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
+                                    <CheckCircle2 size={16} className="flex-shrink-0" />
+                                    Kata laluan berjaya ditetapkan semula. Sila log masuk.
+                                </div>
+                            )}
+                            {loginError && (
+                                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                                    {loginError}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                                     Nombor Matrik / UKMPer / Pengenalan
@@ -246,7 +248,7 @@ function Login() {
                                     className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
                                     placeholder="Cth: K012345 (KP/Pegawai) atau A012345 (Pelajar)"
                                     value={noMatrik}
-                                    onChange={(e) => setNoMatrik(e.target.value)}
+                                    onChange={(e) => { setNoMatrik(e.target.value); setLoginError(''); }}
                                 />
                             </div>
 
@@ -260,7 +262,7 @@ function Login() {
                                     className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
                                     placeholder="Masukkan Kata Laluan"
                                     value={katalaluan}
-                                    onChange={(e) => setKatalaluan(e.target.value)}
+                                    onChange={(e) => { setKatalaluan(e.target.value); setLoginError(''); }}
                                 />
                             </div>
 

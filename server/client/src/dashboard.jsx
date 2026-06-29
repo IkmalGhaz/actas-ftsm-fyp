@@ -65,6 +65,11 @@ function Dashboard() {
                 ]);
                 setDataAkademik(resAkademik.data);
                 setNotifikasi(resNotif.data);
+                // Auto-mark all unread notifications as read
+                if (resNotif.data.some(n => n.status === 'Belum Dibaca')) {
+                    axios.patch(`http://localhost:5000/api/pelajar/maklum-balas/baca/${user.no_matrik}`)
+                        .catch(() => {});
+                }
             } catch (err) {
                 console.error('Gagal tarik data dashboard pelajar:', err);
             } finally {
@@ -110,19 +115,27 @@ function Dashboard() {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                 <Bell size={13} className="text-[#003082]" /> Maklum Balas Ketua Program
                             </p>
-                            {notifikasi.map(item => (
-                                <div key={item.id} className="bg-amber-50 border border-amber-200/70 p-5 rounded-2xl flex items-start gap-4">
-                                    <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl mt-0.5 flex-shrink-0">
-                                        <MessageSquare size={18} />
+                            {notifikasi.map(item => {
+                                const unread = item.status === 'Belum Dibaca';
+                                return (
+                                    <div key={item.id} className={`p-5 rounded-2xl flex items-start gap-4 border ${unread ? 'bg-amber-50 border-amber-200/70' : 'bg-gray-50 border-gray-100'}`}>
+                                        <div className={`p-2.5 rounded-xl mt-0.5 flex-shrink-0 ${unread ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'}`}>
+                                            <MessageSquare size={18} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                {unread && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full">Baru</span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-700 font-medium leading-relaxed">{item.mesej}</p>
+                                            <p className={`text-xs font-bold mt-2 ${unread ? 'text-amber-600' : 'text-gray-400'}`}>
+                                                {new Date(item.tarikh).toLocaleDateString('ms-MY')}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-700 font-medium leading-relaxed">{item.mesej}</p>
-                                        <p className="text-xs text-amber-600 font-bold mt-2">
-                                            {new Date(item.tarikh).toLocaleDateString('ms-MY')}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 

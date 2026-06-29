@@ -1,14 +1,31 @@
 import { Settings, Save } from 'lucide-react';
 import { useState } from 'react';
 
+const STORAGE_KEY = 'actas_config';
+
+function loadConfig() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+    } catch {}
+    return {
+        statusPelajar: true,
+        semester: 'Semester 1 2025/2026',
+        tarikhMula: '2025-01-01',
+        tarikhAkhir: '2025-05-31',
+    };
+}
+
 export default function KonfigurasiSistem() {
-    const [statusPelajar, setStatusPelajar] = useState(true);
-    const [semester, setSemester] = useState('Semester 1 2025/2026');
-    const [tarikhMula, setTarikhMula] = useState('2025-01-01');
-    const [tarikhAkhir, setTarikhAkhir] = useState('2025-05-31');
-    const [saved, setSaved] = useState(false);
+    const init = loadConfig();
+    const [statusPelajar, setStatusPelajar] = useState(init.statusPelajar);
+    const [semester, setSemester]           = useState(init.semester);
+    const [tarikhMula, setTarikhMula]       = useState(init.tarikhMula);
+    const [tarikhAkhir, setTarikhAkhir]     = useState(init.tarikhAkhir);
+    const [saved, setSaved]                 = useState(false);
 
     const handleSimpan = () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ statusPelajar, semester, tarikhMula, tarikhAkhir }));
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
     };

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 function TambahKursus() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
 
     // Pastikan nilai awal (state) sepadan dengan struktur borang
+    const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+
     const [formData, setFormData] = useState({
         kod_kursus: '',
         nama_kursus: '',
@@ -43,11 +46,11 @@ function TambahKursus() {
                 mata_nilaian: mataNilaian,
                 ...formData
             });
-            alert("Selesai! Keputusan telah direkodkan.");
-            navigate('/dashboard'); // Kembali ke Papan Pemuka utama
+            setSubmitStatus('success');
+            setTimeout(() => navigate('/dashboard'), 1500);
         } catch (error) {
-            alert("Ralat pelayan semasa menyimpan. Sila cuba lagi.");
             console.error(error);
+            setSubmitStatus('error');
         }
     };
 
@@ -63,6 +66,18 @@ function TambahKursus() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitStatus === 'success' && (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
+                            <CheckCircle2 size={18} className="flex-shrink-0" />
+                            Keputusan berjaya direkodkan! Mengalih ke papan pemuka...
+                        </div>
+                    )}
+                    {submitStatus === 'error' && (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                            <XCircle size={18} className="flex-shrink-0" />
+                            Ralat pelayan semasa menyimpan. Sila cuba lagi.
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Kod Kursus</label>
@@ -90,16 +105,17 @@ function TambahKursus() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                            <select 
-                                name="kategori" 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
+                            <select
+                                name="kategori"
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                                 value={formData.kategori}
                                 onChange={handleChange}
                             >
                                 <option value="Wajib Fakulti">Wajib Fakulti</option>
-                                <option value="Wajib Universiti">Wajib Universiti</option>
-                                <option value="Citra">Citra</option>
-                                <option value="Elektif">Elektif</option>
+                                <option value="Citra Wajib">Citra Wajib</option>
+                                <option value="Citra Universiti">Citra Universiti</option>
+                                <option value="Wajib Program">Wajib Program</option>
+                                <option value="Lengkap Program">Lengkap Program</option>
                             </select>
                         </div>
                         <div>
@@ -143,6 +159,8 @@ function TambahKursus() {
                                 <option value="B-">B-</option>
                                 <option value="C+">C+</option>
                                 <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
                             </select>
                         </div>
                     </div>

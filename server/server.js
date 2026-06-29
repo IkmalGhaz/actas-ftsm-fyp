@@ -403,6 +403,24 @@ db.query(sqlBinaJadual, (err) => {
     if (err) console.error("Ralat bina jadual maklum_balas:", err.message);
 });
 
+// PATCH: Tandai semua maklum balas pelajar sebagai dibaca
+app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', (req, res) => {
+    try {
+        const noMatrik = req.params.no_matrik;
+        const sql = "UPDATE maklum_balas SET status = 'Dibaca' WHERE no_matrik = ? AND status = 'Belum Dibaca'";
+        db.query(sql, [noMatrik], (err) => {
+            if (err) {
+                console.error('❌ /api/pelajar/maklum-balas/baca error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data.' });
+            }
+            res.status(200).json({ message: 'Maklum balas ditandai sebagai dibaca.' });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in PATCH /maklum-balas/baca:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
+});
+
 // POST: KP hantar maklum balas kepada pelajar
 app.post('/api/kp/maklum-balas', (req, res) => {
     try {
@@ -542,10 +560,21 @@ db.query(`
     if (err) console.error('Ralat bina jadual password_reset_tokens:', err.message);
 });
 
-// Tambah kolum email ke jadual pelajar jika belum wujud
+// Tambah kolum email ke jadual pelajar dan kakitangan jika belum wujud
 db.query(`ALTER TABLE pelajar ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err) => {
     if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum email:', err.message);
+        console.error('Ralat tambah kolum email (pelajar):', err.message);
+    }
+});
+db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+        console.error('Ralat tambah kolum email (kakitangan):', err.message);
+    }
+});
+// Tambah kolum user_type ke jadual password_reset_tokens jika belum wujud
+db.query(`ALTER TABLE password_reset_tokens ADD COLUMN IF NOT EXISTS user_type VARCHAR(20) DEFAULT 'pelajar'`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+        console.error('Ralat tambah kolum user_type:', err.message);
     }
 });
 
@@ -557,7 +586,7 @@ const mailer = nodemailer.createTransport({
     },
 });
 
-// POST: Hantar e-mel reset kata laluan
+// POST: Hantar e-mel reset kata laluan (pelajar & kakitangan)
 app.post('/api/forgot-password', (req, res) => {
     try {
         const { email, no_matrik } = req.body;
@@ -566,30 +595,23 @@ app.post('/api/forgot-password', (req, res) => {
             return res.status(400).json({ success: false, message: 'E-mel dan No. Matrik diperlukan.' });
         }
 
-        db.query(
-            'SELECT * FROM pelajar WHERE no_matrik = ? AND email = ?',
-            [no_matrik, email],
-            (err, results) => {
-                if (err) {
-                    console.error('❌ /api/forgot-password query error:', err.message);
-                    return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
-                }
+        // Cari dalam pelajar dahulu, kemudian kakitangan
+        db.query('SELECT * FROM pelajar WHERE no_matrik = ? AND email = ?', [no_matrik, email], (err, pelajarResults) => {
+            if (err) {
+                console.error('❌ /api/forgot-password pelajar query error:', err.message);
+                return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
+            }
 
-                if (results.length === 0) {
-                    return res.status(404).json({ success: false, message: 'Tiada akaun dijumpai dengan maklumat tersebut.' });
-                }
-
-                const pelajar = results[0];
+            const sendReset = (user, userType) => {
                 const token = crypto.randomBytes(32).toString('hex');
-                const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 jam
+                const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-                // Padam token lama jika ada
                 db.query('DELETE FROM password_reset_tokens WHERE no_matrik = ?', [no_matrik], (delErr) => {
                     if (delErr) console.error('Ralat padam token lama:', delErr.message);
 
                     db.query(
-                        'INSERT INTO password_reset_tokens (no_matrik, token, expires_at) VALUES (?, ?, ?)',
-                        [no_matrik, token, expiresAt],
+                        'INSERT INTO password_reset_tokens (no_matrik, token, expires_at, user_type) VALUES (?, ?, ?, ?)',
+                        [no_matrik, token, expiresAt, userType],
                         (insertErr) => {
                             if (insertErr) {
                                 console.error('❌ /api/forgot-password insert token error:', insertErr.message);
