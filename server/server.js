@@ -329,12 +329,13 @@ app.get('/api/kp/taburan-gred', (req, res) => {
             SELECT kp.gred, COUNT(kp.no_matrik) as jumlah
             FROM keputusan kp
             JOIN pelajar p ON kp.no_matrik = p.no_matrik
-            WHERE p.program IN (${placeholders})
+            WHERE p.program IN (${placeholders}) AND kp.gred != 'L'
             GROUP BY kp.gred
             ORDER BY ${ORDER_CASE}
         ` : `
             SELECT gred, COUNT(no_matrik) as jumlah
             FROM keputusan
+            WHERE gred != 'L'
             GROUP BY gred
             ORDER BY ${ORDER_CASE}
         `;

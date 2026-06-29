@@ -8,7 +8,7 @@ const GRADE_GROUPS = [
     { label: 'Cemerlang', desc: 'A, A-',     grades: ['A', 'A-'],       barBg: 'bg-emerald-500', countBg: 'bg-emerald-100', countText: 'text-emerald-700', fill: '#10b981' },
     { label: 'Kepujian',  desc: 'B+, B, B-', grades: ['B+', 'B', 'B-'], barBg: 'bg-blue-500',    countBg: 'bg-blue-100',    countText: 'text-blue-700',    fill: '#3b82f6' },
     { label: 'Lulus',     desc: 'C+, C',     grades: ['C+', 'C'],       barBg: 'bg-amber-400',   countBg: 'bg-amber-100',   countText: 'text-amber-700',   fill: '#f59e0b' },
-    { label: 'Kritikal',  desc: 'D, E',      grades: ['D', 'E'],        barBg: 'bg-red-500',     countBg: 'bg-red-100',     countText: 'text-red-700',     fill: '#ef4444' },
+    { label: 'Gagal',     desc: 'D, E',      grades: ['D', 'E'],        barBg: 'bg-red-500',     countBg: 'bg-red-100',     countText: 'text-red-700',     fill: '#ef4444' },
 ];
 
 function getBarFill(gred) {
@@ -43,11 +43,11 @@ function AnalisisGred() {
             params: { programs: JSON.stringify(user.programs_handled ?? []) }
         })
             .then(res => {
-                setDataGred(res.data.map(item => ({
-                    name:     `Gred ${(item.gred ?? '?').trim().toUpperCase()}`,
-                    jumlah:   parseInt(item.jumlah) || 0,
-                    gredAsal: (item.gred ?? '').trim().toUpperCase(),
-                })));
+                setDataGred(res.data.map(item => {
+                    const g = (item.gred ?? '?').trim().toUpperCase();
+                    const name = (g === 'D' || g === 'E') ? `Gagal (${g})` : `Gred ${g}`;
+                    return { name, jumlah: parseInt(item.jumlah) || 0, gredAsal: g };
+                }));
             })
             .catch(() => setError('Gagal memuat data analisis gred. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
@@ -65,7 +65,7 @@ function AnalisisGred() {
         return { ...g, count, pct };
     }), [dataGred, totalKeputusan]);
 
-    const passCount = gradeGroups.filter(g => g.label !== 'Kritikal').reduce((s, g) => s + g.count, 0);
+    const passCount = gradeGroups.filter(g => g.label !== 'Gagal').reduce((s, g) => s + g.count, 0);
     const passRate  = totalKeputusan > 0 ? Math.round((passCount / totalKeputusan) * 100) : 0;
 
     return (
