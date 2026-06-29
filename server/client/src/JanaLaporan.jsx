@@ -5,18 +5,33 @@ import { Printer, Download, Filter, ChevronDown, FileText } from 'lucide-react';
 
 const KATEGORI_PILLS = ['Semua', 'Anugerah Dekan', 'Amaran Akademik'];
 
-function getKategori(cgpa) {
+function getThresholds() {
+    try {
+        const raw = localStorage.getItem('actas_config');
+        if (raw) {
+            const cfg = JSON.parse(raw);
+            return {
+                cgpaDekan:  parseFloat(cfg.cgpaDekan)  || 3.67,
+                cgpaAmaran: parseFloat(cfg.cgpaAmaran) || 2.00,
+            };
+        }
+    } catch {}
+    return { cgpaDekan: 3.67, cgpaAmaran: 2.00 };
+}
+
+function getKategori(cgpa, dekan = 3.67, amaran = 2.00) {
     const v = parseFloat(cgpa);
-    if (v >= 3.67) return { label: 'Anugerah Dekan',  bg: 'bg-emerald-100', text: 'text-emerald-700' };
-    if (v >= 3.00) return { label: 'Kepujian',         bg: 'bg-blue-100',    text: 'text-blue-700'    };
-    if (v >= 2.00) return { label: 'Lulus',            bg: 'bg-amber-100',   text: 'text-amber-700'   };
-    return           { label: 'Amaran Akademik', bg: 'bg-red-100',     text: 'text-red-700'     };
+    if (v >= dekan)  return { label: 'Anugerah Dekan',  bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    if (v >= 3.00)   return { label: 'Kepujian',         bg: 'bg-blue-100',    text: 'text-blue-700'    };
+    if (v >= amaran) return { label: 'Lulus',            bg: 'bg-amber-100',   text: 'text-amber-700'   };
+    return             { label: 'Amaran Akademik', bg: 'bg-red-100',     text: 'text-red-700'     };
 }
 
 function JanaLaporan() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
 
+    const { cgpaDekan, cgpaAmaran } = getThresholds();
     const [senaraiPelajar, setSenaraiPelajar] = useState([]);
     const [loading, setLoading]     = useState(true);
     const [fetchError, setFetchError] = useState('');
@@ -43,17 +58,17 @@ function JanaLaporan() {
         senaraiPelajar.filter(p => {
             const v = parseFloat(p.cgpa);
             if (programFilter !== 'Semua' && p.program !== programFilter) return false;
-            if (kategoriFilter === 'Anugerah Dekan')  return v >= 3.67;
-            if (kategoriFilter === 'Amaran Akademik') return v < 2.00;
+            if (kategoriFilter === 'Anugerah Dekan')  return v >= cgpaDekan;
+            if (kategoriFilter === 'Amaran Akademik') return v < cgpaAmaran;
             return true;
         })
-    , [senaraiPelajar, programFilter, kategoriFilter]);
+    , [senaraiPelajar, programFilter, kategoriFilter, cgpaDekan, cgpaAmaran]);
 
     const stats = useMemo(() => ({
         total:  pelajarDitapis.length,
-        dekan:  pelajarDitapis.filter(p => parseFloat(p.cgpa) >= 3.67).length,
-        amaran: pelajarDitapis.filter(p => parseFloat(p.cgpa) < 2.00).length,
-    }), [pelajarDitapis]);
+        dekan:  pelajarDitapis.filter(p => parseFloat(p.cgpa) >= cgpaDekan).length,
+        amaran: pelajarDitapis.filter(p => parseFloat(p.cgpa) < cgpaAmaran).length,
+    }), [pelajarDitapis, cgpaDekan, cgpaAmaran]);
 
     const printLabel = [
         kategoriFilter !== 'Semua' ? kategoriFilter : 'Semua Pelajar',
@@ -74,7 +89,7 @@ function JanaLaporan() {
             `"${p.program}"`,
             p.totalKredit,
             p.cgpa,
-            `"${getKategori(p.cgpa).label}"`,
+            `"${getKategori(p.cgpa, cgpaDekan, cgpaAmaran).label}"`,
         ]);
         const csvContent = 'data:text/csv;charset=utf-8,﻿'
             + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -301,7 +316,7 @@ function JanaLaporan() {
                                             </tr>
                                         ) : (
                                             pelajarDitapis.map((p, i) => {
-                                                const kat = getKategori(p.cgpa);
+                                                const kat = getKategori(p.cgpa, cgpaDekan, cgpaAmaran);
                                                 return (
                                                     <tr key={p.no_matrik}
                                                         className="hover:bg-gray-50/60 transition-colors print:hover:bg-transparent">

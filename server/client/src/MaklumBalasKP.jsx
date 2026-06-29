@@ -7,18 +7,33 @@ function getInitials(nama) {
     return (nama ?? '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
-function cgpaBadge(cgpa) {
+function getThresholds() {
+    try {
+        const raw = localStorage.getItem('actas_config');
+        if (raw) {
+            const cfg = JSON.parse(raw);
+            return {
+                cgpaDekan:  parseFloat(cfg.cgpaDekan)  || 3.67,
+                cgpaAmaran: parseFloat(cfg.cgpaAmaran) || 2.00,
+            };
+        }
+    } catch {}
+    return { cgpaDekan: 3.67, cgpaAmaran: 2.00 };
+}
+
+function cgpaBadge(cgpa, dekan = 3.67, amaran = 2.00) {
     const v = parseFloat(cgpa);
-    if (v >= 3.67) return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
-    if (v >= 3.00) return { bg: 'bg-blue-100',    text: 'text-blue-700'    };
-    if (v >= 2.00) return { bg: 'bg-amber-100',   text: 'text-amber-700'   };
-    return           { bg: 'bg-red-100',     text: 'text-red-700'     };
+    if (v >= dekan)  return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    if (v >= 3.00)   return { bg: 'bg-blue-100',    text: 'text-blue-700'    };
+    if (v >= amaran) return { bg: 'bg-amber-100',   text: 'text-amber-700'   };
+    return             { bg: 'bg-red-100',     text: 'text-red-700'     };
 }
 
 function MaklumBalasKP() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
 
+    const { cgpaDekan, cgpaAmaran } = getThresholds();
     const [senaraiPelajar, setSenaraiPelajar] = useState([]);
     const [loading, setLoading]     = useState(true);
     const [fetchError, setFetchError] = useState('');
@@ -46,7 +61,7 @@ function MaklumBalasKP() {
             p.nama.toLowerCase().includes(carian.toLowerCase())
         ), [senaraiPelajar, carian]);
 
-    const kritikalCount = senaraiPelajar.filter(p => parseFloat(p.cgpa) < 2.00).length;
+    const kritikalCount = senaraiPelajar.filter(p => parseFloat(p.cgpa) < cgpaAmaran).length;
 
     const handleHantar = async (e) => {
         e.preventDefault();
@@ -119,7 +134,7 @@ function MaklumBalasKP() {
                                 </p>
                                 <p className="text-white text-3xl font-black mt-1">{kritikalCount}</p>
                                 <p style={{ color: 'rgba(252,165,165,0.5)', fontSize: 10, marginTop: 2 }}>
-                                    PNGK &lt; 2.00
+                                    PNGK &lt; {cgpaAmaran.toFixed(2)}
                                 </p>
                             </div>
                         )}
@@ -187,9 +202,9 @@ function MaklumBalasKP() {
                             ) : (
                                 <div className="space-y-0.5">
                                     {pelajarDitapis.map(pelajar => {
-                                        const isCritical = parseFloat(pelajar.cgpa) < 2.00;
+                                        const isCritical = parseFloat(pelajar.cgpa) < cgpaAmaran;
                                         const isSelected = pelajarDipilih?.no_matrik === pelajar.no_matrik;
-                                        const badge = cgpaBadge(pelajar.cgpa);
+                                        const badge = cgpaBadge(pelajar.cgpa, cgpaDekan, cgpaAmaran);
                                         return (
                                             <div
                                                 key={pelajar.no_matrik}
@@ -358,7 +373,7 @@ function MaklumBalasKP() {
                                 {kritikalCount > 0 && (
                                     <div className="flex items-center gap-2 text-xs text-red-400 font-medium mt-1 px-3 py-2 rounded-lg bg-red-50">
                                         <AlertTriangle size={12} />
-                                        <span>{kritikalCount} pelajar memerlukan perhatian segera (PNGK &lt; 2.00)</span>
+                                        <span>{kritikalCount} pelajar memerlukan perhatian segera (PNGK &lt; {cgpaAmaran.toFixed(2)})</span>
                                     </div>
                                 )}
                             </div>

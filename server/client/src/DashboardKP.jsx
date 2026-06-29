@@ -3,26 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Users, MessageSquare, Search, ArrowUpDown, Download } from 'lucide-react';
 
-const DIST_TIERS = [
-    { label: 'Anugerah Dekan',  min: 3.67, max: Infinity, bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-50' },
-    { label: 'Kepujian Tinggi', min: 3.00, max: 3.67,    bg: 'bg-blue-500',    text: 'text-blue-700',    light: 'bg-blue-50'    },
-    { label: 'Kepujian',        min: 2.67, max: 3.00,    bg: 'bg-sky-400',     text: 'text-sky-700',     light: 'bg-sky-50'     },
-    { label: 'Lulus',           min: 2.00, max: 2.67,    bg: 'bg-amber-400',   text: 'text-amber-700',   light: 'bg-amber-50'   },
-    { label: 'Amaran Akademik', min: 0,    max: 2.00,    bg: 'bg-red-500',     text: 'text-red-700',     light: 'bg-red-50'     },
-];
+function getThresholds() {
+    try {
+        const raw = localStorage.getItem('actas_config');
+        if (raw) {
+            const cfg = JSON.parse(raw);
+            return {
+                cgpaDekan:  parseFloat(cfg.cgpaDekan)  || 3.67,
+                cgpaAmaran: parseFloat(cfg.cgpaAmaran) || 2.00,
+            };
+        }
+    } catch {}
+    return { cgpaDekan: 3.67, cgpaAmaran: 2.00 };
+}
 
-function cgpaBadge(cgpa) {
+function cgpaBadge(cgpa, dekan = 3.67, amaran = 2.00) {
     const v = parseFloat(cgpa);
-    if (v >= 3.67) return 'bg-emerald-100 text-emerald-700';
-    if (v >= 3.00) return 'bg-blue-100 text-blue-700';
-    if (v >= 2.00) return 'bg-yellow-100 text-yellow-700';
-    if (v >  0)   return 'bg-red-100 text-red-700';
+    if (v >= dekan)  return 'bg-emerald-100 text-emerald-700';
+    if (v >= 3.00)   return 'bg-blue-100 text-blue-700';
+    if (v >= amaran) return 'bg-yellow-100 text-yellow-700';
+    if (v > 0)       return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
 }
 
 function DashboardKP() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
+    const { cgpaDekan, cgpaAmaran } = getThresholds();
 
     const [kpData, setKpData]     = useState({ jumlah_pelajar: 0, purata_cgpa_fakulti: '0.00', senarai_pelajar: [] });
     const [loading, setLoading]   = useState(true);
@@ -44,16 +51,25 @@ function DashboardKP() {
     const pelajarList = kpData.senarai_pelajar;
     const total       = pelajarList.length;
     const avgCgpa     = parseFloat(kpData.purata_cgpa_fakulti) || 0;
-    const dekanCount  = pelajarList.filter(p => parseFloat(p.cgpa) >= 3.67).length;
-    const amaranCount = pelajarList.filter(p => parseFloat(p.cgpa) < 2.00 && parseFloat(p.cgpa) > 0).length;
+    const dekanCount  = pelajarList.filter(p => parseFloat(p.cgpa) >= cgpaDekan).length;
+    const amaranCount = pelajarList.filter(p => parseFloat(p.cgpa) < cgpaAmaran && parseFloat(p.cgpa) > 0).length;
 
-    const distribution = useMemo(() => DIST_TIERS.map(t => {
-        const count = pelajarList.filter(p => {
-            const v = parseFloat(p.cgpa);
-            return v >= t.min && v < t.max;
-        }).length;
-        return { ...t, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 };
-    }), [pelajarList, total]);
+    const distribution = useMemo(() => {
+        const tiers = [
+            { label: 'Anugerah Dekan',  min: cgpaDekan,  max: Infinity,   bg: 'bg-emerald-500', text: 'text-emerald-700', light: 'bg-emerald-50' },
+            { label: 'Kepujian Tinggi', min: 3.00,        max: cgpaDekan,  bg: 'bg-blue-500',    text: 'text-blue-700',   light: 'bg-blue-50'    },
+            { label: 'Kepujian',        min: 2.67,        max: 3.00,       bg: 'bg-sky-400',     text: 'text-sky-700',    light: 'bg-sky-50'     },
+            { label: 'Lulus',           min: cgpaAmaran,  max: 2.67,       bg: 'bg-amber-400',   text: 'text-amber-700',  light: 'bg-amber-50'   },
+            { label: 'Amaran Akademik', min: 0,           max: cgpaAmaran, bg: 'bg-red-500',     text: 'text-red-700',    light: 'bg-red-50'     },
+        ];
+        return tiers.map(t => {
+            const count = pelajarList.filter(p => {
+                const v = parseFloat(p.cgpa);
+                return v >= t.min && v < t.max;
+            }).length;
+            return { ...t, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 };
+        });
+    }, [pelajarList, total, cgpaDekan, cgpaAmaran]);
 
     const filteredPelajar = useMemo(() => {
         let list = [...pelajarList];
@@ -282,7 +298,7 @@ function DashboardKP() {
                                                 {p.totalKredit} 
                                             </td>
                                             <td className="px-4 py-3.5 text-center">
-                                                <span className={`px-2.5 py-1 rounded-md font-extrabold text-xs inline-block min-w-[46px] text-center ${cgpaBadge(p.cgpa)}`}>
+                                                <span className={`px-2.5 py-1 rounded-md font-extrabold text-xs inline-block min-w-[46px] text-center ${cgpaBadge(p.cgpa, cgpaDekan, cgpaAmaran)}`}>
                                                     {p.cgpa}
                                                 </span>
                                             </td>
