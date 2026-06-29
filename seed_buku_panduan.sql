@@ -39,10 +39,12 @@ CREATE TABLE pelajar (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE kakitangan (
-    id_ukmper   VARCHAR(20)  NOT NULL PRIMARY KEY,
-    nama        VARCHAR(100) NOT NULL,
-    peranan     VARCHAR(50)  NOT NULL,
-    katalaluan  VARCHAR(100) NOT NULL
+    id_ukmper        VARCHAR(20)  NOT NULL PRIMARY KEY,
+    nama             VARCHAR(100) NOT NULL,
+    peranan          VARCHAR(50)  NOT NULL,
+    katalaluan       VARCHAR(100) NOT NULL,
+    judul_jawatan    VARCHAR(100) NULL,
+    programs_handled JSON         NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE keputusan (
@@ -178,23 +180,23 @@ INSERT INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori, program, seme
 
 INSERT INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori, program, semester_cadang, taraf) VALUES
 -- Semester 2
-('TTTH2843', 'Pengaturcaraan Multimedia',                          3, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 2, 'WP'),
+('TTTH2843', 'Pengaturcaraan Multimedia',                          3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 2, 'WP'),
 -- Semester 3
-('TTTE2104', 'Kejuruteraan Keperluan Perisian',                    4, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 3, 'WP'),
-('TTTH2823', 'Animasi',                                            3, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 3, 'WP'),
+('TTTE2104', 'Kejuruteraan Keperluan Perisian',                    4, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 3, 'WP'),
+('TTTH2823', 'Animasi',                                            3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 3, 'WP'),
 -- Semester 4
-('TTTH2304', 'Reka Bentuk Perisian untuk Sistem Multimedia',       4, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 4, 'WP'),
-('TTTH2623', 'Teknologi Audio dan Video Digital',                  3, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 4, 'WP'),
+('TTTH2304', 'Reka Bentuk Perisian untuk Sistem Multimedia',       4, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 4, 'WP'),
+('TTTH2623', 'Teknologi Audio dan Video Digital',                  3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 4, 'WP'),
 -- Semester 5
-('TTTH3404', 'Pembangunan Perisian untuk Sistem Multimedia',       4, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 5, 'WP'),
-('TTTE3503', 'Pengujian Perisian',                                 3, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 5, 'WP'),
-('TTTH4172', 'Usulan Projek',                                      2, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 5, 'WP'),
-('TTTH3623', 'Pemodelan 3D',                                       3, 'Lengkap Program', 'Kejuruteraan Perisian Multimedia', 5, 'LP'),
-('TTTH3723', 'Seni Reka Bentuk Grafik',                            3, 'Lengkap Program', 'Kejuruteraan Perisian Multimedia', 5, 'LP'),
+('TTTH3404', 'Pembangunan Perisian untuk Sistem Multimedia',       4, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 5, 'WP'),
+('TTTE3503', 'Pengujian Perisian',                                 3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 5, 'WP'),
+('TTTH4172', 'Usulan Projek',                                      2, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 5, 'WP'),
+('TTTH3623', 'Pemodelan 3D',                                       3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 5, 'LP'),
+('TTTH3723', 'Seni Reka Bentuk Grafik',                            3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 5, 'LP'),
 -- Semester 6
-('TTTH4086', 'Projek',                                             6, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 6, 'WP'),
-('TTTE4333', 'Pengurusan dan Penyenggaraan Perisian',              3, 'Wajib Program',   'Kejuruteraan Perisian Multimedia', 6, 'WP'),
-('TTTH3863', 'Permainan Multimedia',                               3, 'Lengkap Program', 'Kejuruteraan Perisian Multimedia', 6, 'LP');
+('TTTH4086', 'Projek',                                             6, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 6, 'WP'),
+('TTTE4333', 'Pengurusan dan Penyenggaraan Perisian',              3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 6, 'WP'),
+('TTTH3863', 'Permainan Multimedia',                               3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 6, 'LP');
 
 
 -- =================================================================
@@ -203,20 +205,20 @@ INSERT INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori, program, seme
 
 INSERT INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori, program, semester_cadang, taraf) VALUES
 -- Semester 2
-('TTTU2323', 'Prinsip Sistem Maklumat',                                  3, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 2, 'WP'),
+('TTTU2323', 'Prinsip Sistem Maklumat',                                  3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 2, 'WP'),
 -- Semester 3
-('TTTU2023', 'Pengurusan Proses Bisnes',                                 3, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 3, 'WP'),
+('TTTU2023', 'Pengurusan Proses Bisnes',                                 3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 3, 'WP'),
 -- Semester 4
-('TTTU2304', 'Rekabentuk Perisian untuk Sistem Maklumat',                4, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 4, 'WP'),
-('TTTU2163', 'Analitik Data dan Sistem Sokongan Keputusan',              3, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 4, 'WP'),
+('TTTU2304', 'Rekabentuk Perisian untuk Sistem Maklumat',                4, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 4, 'WP'),
+('TTTU2163', 'Analitik Data dan Sistem Sokongan Keputusan',              3, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 4, 'WP'),
 -- Semester 5
-('TTTU3404', 'Pembangunan Perisian untuk Sistem Maklumat',               4, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 5, 'WP'),
-('TTTU4172', 'Usulan Projek',                                            2, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 5, 'WP'),
-('TTTC3213', 'Kejuruteraan Data',                                        3, 'Lengkap Program', 'Kejuruteraan Perisian Maklumat', 5, 'LP'),
+('TTTU3404', 'Pembangunan Perisian untuk Sistem Maklumat',               4, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 5, 'WP'),
+('TTTU4172', 'Usulan Projek',                                            2, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 5, 'WP'),
+('TTTC3213', 'Kejuruteraan Data',                                        3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 5, 'LP'),
 -- Semester 6
-('TTTU4086', 'Projek',                                                   6, 'Wajib Program',   'Kejuruteraan Perisian Maklumat', 6, 'WP'),
-('TTTU4363', 'Audit dan Keselamatan Sistem Maklumat',                    3, 'Lengkap Program', 'Kejuruteraan Perisian Maklumat', 6, 'LP'),
-('TTTU4333', 'Pengurusan Sistem Maklumat',                               3, 'Lengkap Program', 'Kejuruteraan Perisian Maklumat', 6, 'LP');
+('TTTU4086', 'Projek',                                                   6, 'Wajib Program',   'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 6, 'WP'),
+('TTTU4363', 'Audit dan Keselamatan Sistem Maklumat',                    3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 6, 'LP'),
+('TTTU4333', 'Pengurusan Sistem Maklumat',                               3, 'Lengkap Program', 'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)', 6, 'LP');
 
 
 -- =================================================================
@@ -224,12 +226,13 @@ INSERT INTO kursus (kod_kursus, nama_kursus, jam_kredit, kategori, program, seme
 -- =================================================================
 -- Kata laluan: kp123 (Ketua Program), pegawai123 (Pegawai FTSM)
 
-INSERT INTO kakitangan (id_ukmper, nama, peranan, katalaluan) VALUES
-('KP001',      'Dr. Rodziah Latih',          'Ketua Program', 'kp123'),
-('KP002',      'Dr. Saadiah Yahya',          'Ketua Program', 'kp123'),
-('KP003',      'Dr. Norshita Mat Nayan',     'Ketua Program', 'kp123'),
-('KP004',      'Dr. Azrul Hazri Jantan',     'Ketua Program', 'kp123'),
-('PEGAWAI001', 'En. Ahmad Zainuddin Omar',   'Pegawai FTSM',  'pegawai123');
+INSERT INTO kakitangan (id_ukmper, nama, peranan, katalaluan, judul_jawatan, programs_handled) VALUES
+('KP001',      'Dr. Rodziah Latih',           'Ketua Program', 'kp123',     'KP Kejuruteraan Perisian',          JSON_ARRAY('Kejuruteraan Perisian','Kejuruteraan Perisian (Pembangunan Sistem Multimedia)','Kejuruteraan Perisian (Pembangunan Sistem Maklumat)')),
+('KP002',      'Dr. Saadiah Yahya',           'Ketua Program', 'kp123',     'KP Teknologi Maklumat',             JSON_ARRAY('Teknologi Maklumat')),
+('KP003',      'Dr. Nor Samsiah Sani',        'Ketua Program', 'kp123',     'KP Kecerdasan Buatan',              JSON_ARRAY('Sains Komputer (Data Science)','Sains Komputer (Intelligent Machine)')),
+('KP004',      'Dr. Fazlina Mohd Ali',        'Ketua Program', 'kp123',     'KP Teknologi Perisian & Rangkaian', JSON_ARRAY('Sains Komputer (Software Technology)','Sains Komputer (Network Technology)')),
+('KP005',      'Dr. Hamidah Ibrahim',         'Ketua Program', 'kp123',     'KP Sains Komputer',                 JSON_ARRAY('Sains Komputer')),
+('PEGAWAI001', 'En. Ahmad Zainuddin Omar',    'Pegawai FTSM',  'pegawai123', NULL,                               NULL);
 
 
 -- =================================================================
@@ -238,16 +241,32 @@ INSERT INTO kakitangan (id_ukmper, nama, peranan, katalaluan) VALUES
 -- Kata laluan semua pelajar: pelajar123
 
 INSERT INTO pelajar (no_matrik, nama, program, katalaluan) VALUES
--- Sains Komputer
-('A21CS001', 'Ahmad Farhan bin Abdullah',      'Sains Komputer',                   'pelajar123'),
-('A21CS002', 'Siti Aishah binti Razak',        'Sains Komputer',                   'pelajar123'),
--- Teknologi Maklumat
-('A21TM001', 'Muhammad Hafiz bin Ismail',      'Teknologi Maklumat',               'pelajar123'),
-('A21TM002', 'Nur Farhana binti Kamaruddin',   'Teknologi Maklumat',               'pelajar123'),
--- Kejuruteraan Perisian (Multimedia)
-('A21MM001', 'Azri Hakimi bin Kamarudin',      'Kejuruteraan Perisian Multimedia', 'pelajar123'),
--- Kejuruteraan Perisian (Maklumat)
-('A21MI001', 'Irdina Sofea binti Mohd Razif',  'Kejuruteraan Perisian Maklumat',   'pelajar123');
+-- Sains Komputer (pra-major, KP005)
+('A21CS001', 'Ahmad Farhan bin Abdullah',      'Sains Komputer',                             'pelajar123'),
+('A22CS001', 'Nur Ain binti Haszuwan',         'Sains Komputer',                             'pelajar123'),
+('A22CS002', 'Hazwan Hakim bin Roslan',        'Sains Komputer',                             'pelajar123'),
+-- Sains Komputer (Data Science), KP003
+('A21CS002', 'Siti Aishah binti Razak',        'Sains Komputer (Data Science)',              'pelajar123'),
+('A21DS001', 'Arif Irfan bin Shaharuddin',     'Sains Komputer (Data Science)',              'pelajar123'),
+('A21DS002', 'Hidayatul Husna binti Osman',    'Sains Komputer (Data Science)',              'pelajar123'),
+-- Sains Komputer (Intelligent Machine), KP003
+('A21IM001', 'Khairul Anwar bin Ahmad',        'Sains Komputer (Intelligent Machine)',       'pelajar123'),
+('A21IM002', 'Nuur Shahira binti Zainol',      'Sains Komputer (Intelligent Machine)',       'pelajar123'),
+-- Sains Komputer (Software Technology), KP004
+('A21ST001', 'Faris Farhan bin Hashim',        'Sains Komputer (Software Technology)',       'pelajar123'),
+('A21ST002', 'Amalina binti Salehuddin',       'Sains Komputer (Software Technology)',       'pelajar123'),
+-- Sains Komputer (Network Technology), KP004
+('A21NT001', 'Aidil Syafiq bin Mansor',        'Sains Komputer (Network Technology)',        'pelajar123'),
+('A21NT002', 'Siti Khadijah binti Ibrahim',    'Sains Komputer (Network Technology)',        'pelajar123'),
+-- Teknologi Maklumat, KP002
+('A21TM001', 'Muhammad Hafiz bin Ismail',      'Teknologi Maklumat',                         'pelajar123'),
+('A21TM002', 'Nur Farhana binti Kamaruddin',   'Teknologi Maklumat',                         'pelajar123'),
+-- Kejuruteraan Perisian (parent), KP001
+('A22KP001', 'Izzatul Muna binti Zainal',      'Kejuruteraan Perisian',                      'pelajar123'),
+-- Kejuruteraan Perisian (Multimedia), KP001
+('A21MM001', 'Azri Hakimi bin Kamarudin',      'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)', 'pelajar123'),
+-- Kejuruteraan Perisian (Maklumat), KP001
+('A21MI001', 'Irdina Sofea binti Mohd Razif',  'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)',   'pelajar123');
 
 
 -- =================================================================
@@ -350,7 +369,215 @@ INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diamb
 ('A21TM002', 'TTTK2093', 'A-', 3.67, 3),
 ('A21TM002', 'TTTR2043', 'B+', 3.33, 3);
 
--- ── A21MM001 — Azri Hakimi (Kejuruteraan Perisian Multimedia, 2 Semester) ──
+-- ── A22CS001 — Nur Ain (Sains Komputer pra-major, 1 Semester) ──────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+('A22CS001', 'TTTT1013', 'B+', 3.33, 1),
+('A22CS001', 'TTTT1713', 'A-', 3.67, 1),
+('A22CS001', 'TTTK1114', 'A-', 3.67, 1),
+('A22CS001', 'TTTR1333', 'B+', 3.33, 1),
+('A22CS001', 'TTTM2033', 'B+', 3.33, 1);
+
+-- ── A22CS002 — Hazwan Hakim (Sains Komputer pra-major, 1 Semester) ─
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+('A22CS002', 'TTTT1013', 'B',  3.00, 1),
+('A22CS002', 'TTTT1713', 'C',  2.00, 1),
+('A22CS002', 'TTTK1114', 'C+', 2.33, 1),
+('A22CS002', 'TTTR1333', 'C',  2.00, 1),
+('A22CS002', 'TTTM2033', 'B',  3.00, 1);
+
+-- ── A21DS001 — Arif Irfan (Sains Komputer Data Science, 4 Semester) ─
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21DS001', 'TTTT1013', 'A-', 3.67, 1),
+('A21DS001', 'TTTT1713', 'B+', 3.33, 1),
+('A21DS001', 'TTTK1114', 'B',  3.00, 1),
+('A21DS001', 'TTTR1333', 'B+', 3.33, 1),
+('A21DS001', 'TTTM2033', 'B',  3.00, 1),
+-- Sem 2
+('A21DS001', 'LMCE1012', 'L',  NULL, 2),
+('A21DS001', 'LMCW1022', 'B+', 3.33, 2),
+('A21DS001', 'TTTT1022', 'B+', 3.33, 2),
+('A21DS001', 'TTTT1964', 'B',  3.00, 2),
+('A21DS001', 'TTTK1143', 'B+', 3.33, 2),
+('A21DS001', 'TTTK2103', 'B',  3.00, 2),
+-- Sem 3
+('A21DS001', 'LMCW2153', 'B+', 3.33, 3),
+('A21DS001', 'LMCK2922', 'L',  NULL, 3),
+('A21DS001', 'TTTU2983', 'B',  3.00, 3),
+('A21DS001', 'TTTK2023', 'B+', 3.33, 3),
+('A21DS001', 'TTTC2013', 'B',  3.00, 3),
+('A21DS001', 'TTTK2093', 'B',  3.00, 3),
+-- Sem 4
+('A21DS001', 'LMCE3012', 'L',  NULL, 4),
+('A21DS001', 'LMCW2143', 'B',  3.00, 4),
+('A21DS001', 'TTTK2053', 'B',  3.00, 4),
+('A21DS001', 'TTTK3163', 'B+', 3.33, 4),
+('A21DS001', 'TTTC2453', 'B+', 3.33, 4),
+('A21DS001', 'TTTP2043', 'B',  3.00, 4);
+
+-- ── A21DS002 — Hidayatul Husna (Sains Komputer Data Science, 2 Sem) ─
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21DS002', 'TTTT1013', 'C+', 2.33, 1),
+('A21DS002', 'TTTT1713', 'C',  2.00, 1),
+('A21DS002', 'TTTK1114', 'C+', 2.33, 1),
+('A21DS002', 'TTTR1333', 'B-', 2.67, 1),
+('A21DS002', 'TTTM2033', 'C',  2.00, 1),
+-- Sem 2
+('A21DS002', 'LMCE1012', 'L',  NULL, 2),
+('A21DS002', 'LMCW1022', 'B-', 2.67, 2),
+('A21DS002', 'TTTT1022', 'C+', 2.33, 2),
+('A21DS002', 'TTTT1964', 'C+', 2.33, 2),
+('A21DS002', 'TTTK1143', 'B-', 2.67, 2),
+('A21DS002', 'TTTK2103', 'C+', 2.33, 2);
+
+-- ── A21IM001 — Khairul Anwar (Sains Komputer Intelligent Machine, 4 Sem) ──
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21IM001', 'TTTT1013', 'A',  4.00, 1),
+('A21IM001', 'TTTT1713', 'A',  4.00, 1),
+('A21IM001', 'TTTK1114', 'A',  4.00, 1),
+('A21IM001', 'TTTR1333', 'A',  4.00, 1),
+('A21IM001', 'TTTM2033', 'A-', 3.67, 1),
+-- Sem 2
+('A21IM001', 'LMCE1012', 'L',  NULL, 2),
+('A21IM001', 'LMCW1022', 'A',  4.00, 2),
+('A21IM001', 'TTTT1022', 'A',  4.00, 2),
+('A21IM001', 'TTTT1964', 'A-', 3.67, 2),
+('A21IM001', 'TTTK1143', 'A',  4.00, 2),
+('A21IM001', 'TTTK2103', 'A-', 3.67, 2),
+-- Sem 3
+('A21IM001', 'LMCW2153', 'A',  4.00, 3),
+('A21IM001', 'LMCK2922', 'L',  NULL, 3),
+('A21IM001', 'TTTU2983', 'A-', 3.67, 3),
+('A21IM001', 'TTTK2023', 'A',  4.00, 3),
+('A21IM001', 'TTTC2013', 'A',  4.00, 3),
+('A21IM001', 'TTTK2093', 'A-', 3.67, 3),
+-- Sem 4
+('A21IM001', 'LMCE3012', 'L',  NULL, 4),
+('A21IM001', 'LMCW2143', 'A',  4.00, 4),
+('A21IM001', 'TTTK2053', 'A-', 3.67, 4),
+('A21IM001', 'TTTK3163', 'A',  4.00, 4),
+('A21IM001', 'TTTC2453', 'A',  4.00, 4),
+('A21IM001', 'TTTC2343', 'A',  4.00, 4);
+
+-- ── A21IM002 — Nuur Shahira (SK Intelligent Machine, 2 Sem) ─────────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21IM002', 'TTTT1013', 'B',  3.00, 1),
+('A21IM002', 'TTTT1713', 'B+', 3.33, 1),
+('A21IM002', 'TTTK1114', 'B-', 2.67, 1),
+('A21IM002', 'TTTR1333', 'B+', 3.33, 1),
+('A21IM002', 'TTTM2033', 'C+', 2.33, 1),
+-- Sem 2
+('A21IM002', 'LMCE1012', 'L',  NULL, 2),
+('A21IM002', 'LMCW1022', 'C+', 2.33, 2),
+('A21IM002', 'TTTT1022', 'B',  3.00, 2),
+('A21IM002', 'TTTT1964', 'B-', 2.67, 2),
+('A21IM002', 'TTTK1143', 'B',  3.00, 2),
+('A21IM002', 'TTTK2103', 'C+', 2.33, 2);
+
+-- ── A21ST001 — Faris Farhan (SK Software Technology, 4 Sem) ─────────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21ST001', 'TTTT1013', 'A-', 3.67, 1),
+('A21ST001', 'TTTT1713', 'B+', 3.33, 1),
+('A21ST001', 'TTTK1114', 'A-', 3.67, 1),
+('A21ST001', 'TTTR1333', 'A-', 3.67, 1),
+('A21ST001', 'TTTM2033', 'B+', 3.33, 1),
+-- Sem 2
+('A21ST001', 'LMCE1012', 'L',  NULL, 2),
+('A21ST001', 'LMCW1022', 'B+', 3.33, 2),
+('A21ST001', 'TTTT1022', 'A-', 3.67, 2),
+('A21ST001', 'TTTT1964', 'B+', 3.33, 2),
+('A21ST001', 'TTTK1143', 'A-', 3.67, 2),
+('A21ST001', 'TTTK2103', 'B+', 3.33, 2),
+-- Sem 3
+('A21ST001', 'LMCW2153', 'B+', 3.33, 3),
+('A21ST001', 'LMCK2922', 'L',  NULL, 3),
+('A21ST001', 'TTTU2983', 'A-', 3.67, 3),
+('A21ST001', 'TTTK2023', 'B+', 3.33, 3),
+('A21ST001', 'TTTC2013', 'B+', 3.33, 3),
+('A21ST001', 'TTTK2093', 'B+', 3.33, 3),
+-- Sem 4
+('A21ST001', 'LMCE3012', 'L',  NULL, 4),
+('A21ST001', 'LMCW2143', 'A-', 3.67, 4),
+('A21ST001', 'TTTK2053', 'A-', 3.67, 4),
+('A21ST001', 'TTTK3163', 'B+', 3.33, 4),
+('A21ST001', 'TTTK2133', 'B+', 3.33, 4),
+('A21ST001', 'TTTK3033', 'B+', 3.33, 4);
+
+-- ── A21ST002 — Amalina (SK Software Technology, 2 Sem, Amaran) ──────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21ST002', 'TTTT1013', 'C',  2.00, 1),
+('A21ST002', 'TTTT1713', 'C+', 2.33, 1),
+('A21ST002', 'TTTK1114', 'C',  2.00, 1),
+('A21ST002', 'TTTR1333', 'B-', 2.67, 1),
+('A21ST002', 'TTTM2033', 'D',  1.00, 1),
+-- Sem 2
+('A21ST002', 'LMCE1012', 'L',  NULL, 2),
+('A21ST002', 'LMCW1022', 'C+', 2.33, 2),
+('A21ST002', 'TTTT1022', 'C',  2.00, 2),
+('A21ST002', 'TTTT1964', 'D',  1.00, 2),
+('A21ST002', 'TTTK1143', 'C',  2.00, 2),
+('A21ST002', 'TTTK2103', 'D',  1.00, 2);
+
+-- ── A21NT001 — Aidil Syafiq (SK Network Technology, 4 Sem) ──────────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21NT001', 'TTTT1013', 'B+', 3.33, 1),
+('A21NT001', 'TTTT1713', 'B+', 3.33, 1),
+('A21NT001', 'TTTK1114', 'B+', 3.33, 1),
+('A21NT001', 'TTTR1333', 'A-', 3.67, 1),
+('A21NT001', 'TTTM2033', 'B',  3.00, 1),
+-- Sem 2
+('A21NT001', 'LMCE1012', 'L',  NULL, 2),
+('A21NT001', 'LMCW1022', 'B',  3.00, 2),
+('A21NT001', 'TTTT1022', 'B+', 3.33, 2),
+('A21NT001', 'TTTT1964', 'B',  3.00, 2),
+('A21NT001', 'TTTK1143', 'B+', 3.33, 2),
+('A21NT001', 'TTTK2103', 'B',  3.00, 2),
+-- Sem 3
+('A21NT001', 'LMCW2153', 'B',  3.00, 3),
+('A21NT001', 'LMCK2922', 'L',  NULL, 3),
+('A21NT001', 'TTTU2983', 'B+', 3.33, 3),
+('A21NT001', 'TTTK2023', 'B',  3.00, 3),
+('A21NT001', 'TTTC2013', 'B+', 3.33, 3),
+('A21NT001', 'TTTK2093', 'B',  3.00, 3),
+-- Sem 4
+('A21NT001', 'LMCE3012', 'L',  NULL, 4),
+('A21NT001', 'LMCW2143', 'B',  3.00, 4),
+('A21NT001', 'TTTK2053', 'B',  3.00, 4),
+('A21NT001', 'TTTK3163', 'B+', 3.33, 4),
+('A21NT001', 'TTTK2133', 'B+', 3.33, 4),
+('A21NT001', 'TTTN2423', 'B',  3.00, 4);
+
+-- ── A21NT002 — Siti Khadijah (SK Network Technology, 2 Sem) ─────────
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+-- Sem 1
+('A21NT002', 'TTTT1013', 'B-', 2.67, 1),
+('A21NT002', 'TTTT1713', 'C+', 2.33, 1),
+('A21NT002', 'TTTK1114', 'B-', 2.67, 1),
+('A21NT002', 'TTTR1333', 'B',  3.00, 1),
+('A21NT002', 'TTTM2033', 'C+', 2.33, 1),
+-- Sem 2
+('A21NT002', 'LMCE1012', 'L',  NULL, 2),
+('A21NT002', 'LMCW1022', 'B-', 2.67, 2),
+('A21NT002', 'TTTT1022', 'C+', 2.33, 2),
+('A21NT002', 'TTTT1964', 'B-', 2.67, 2),
+('A21NT002', 'TTTK1143', 'B',  3.00, 2),
+('A21NT002', 'TTTK2103', 'C+', 2.33, 2);
+
+-- ── A22KP001 — Izzatul Muna (Kejuruteraan Perisian parent, 1 Sem) ───
+INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
+('A22KP001', 'TTTT1013', 'B+', 3.33, 1),
+('A22KP001', 'TTTT1713', 'B',  3.00, 1),
+('A22KP001', 'TTTK1114', 'B',  3.00, 1),
+('A22KP001', 'TTTR1333', 'B+', 3.33, 1),
+('A22KP001', 'TTTM2033', 'B-', 2.67, 1);
+
+-- ── A21MM001 — Azri Hakimi (Kejuruteraan Perisian (Pembangunan Sistem Multimedia), 2 Semester) ──
 INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
 -- Sem 1
 ('A21MM001', 'TTTT1013', 'A',  4.00, 1),
@@ -366,7 +593,7 @@ INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diamb
 ('A21MM001', 'TTTK1143', 'A',  4.00, 2),
 ('A21MM001', 'TTTH2843', 'A-', 3.67, 2);
 
--- ── A21MI001 — Irdina Sofea (Kejuruteraan Perisian Maklumat, 2 Semester) ──
+-- ── A21MI001 — Irdina Sofea (Kejuruteraan Perisian (Pembangunan Sistem Maklumat), 2 Semester) ──
 INSERT INTO keputusan (no_matrik, kod_kursus, gred, mata_nilaian, semester_diambil) VALUES
 -- Sem 1
 ('A21MI001', 'TTTT1013', 'B+', 3.33, 1),
@@ -395,7 +622,22 @@ INSERT INTO maklum_balas (no_matrik, mesej, status) VALUES
 -- =================================================================
 -- RINGKASAN AKAUN DEMO
 -- =================================================================
--- Pelajar   : no_matrik (A21CS001 – A21MI001)  kata laluan: pelajar123
--- Ketua Program : KP001 – KP004               kata laluan: kp123
--- Pegawai   : PEGAWAI001                       kata laluan: pegawai123
+-- PELAJAR (kata laluan: pelajar123)
+--   SK pra-major (KP005) : A21CS001, A22CS001, A22CS002
+--   SK Data Science (KP003) : A21CS002, A21DS001, A21DS002
+--   SK Intelligent Machine (KP003) : A21IM001, A21IM002
+--   SK Software Technology (KP004) : A21ST001, A21ST002
+--   SK Network Technology (KP004)  : A21NT001, A21NT002
+--   Teknologi Maklumat (KP002)     : A21TM001, A21TM002
+--   KP parent (KP001)              : A22KP001
+--   KP Multimedia (KP001)          : A21MM001
+--   KP Maklumat (KP001)            : A21MI001
+-- KETUA PROGRAM (kata laluan: kp123)
+--   KP001 Dr. Rodziah Latih       — KP Kejuruteraan Perisian
+--   KP002 Dr. Saadiah Yahya       — KP Teknologi Maklumat
+--   KP003 Dr. Nor Samsiah Sani    — KP Kecerdasan Buatan
+--   KP004 Dr. Fazlina Mohd Ali    — KP Teknologi Perisian & Rangkaian
+--   KP005 Dr. Hamidah Ibrahim     — KP Sains Komputer
+-- PEGAWAI (kata laluan: pegawai123)
+--   PEGAWAI001 En. Ahmad Zainuddin Omar
 -- =================================================================

@@ -39,7 +39,9 @@ function AnalisisGred() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/taburan-gred')
+        axios.get('http://localhost:5000/api/kp/taburan-gred', {
+            params: { programs: JSON.stringify(user.programs_handled ?? []) }
+        })
             .then(res => {
                 setDataGred(res.data.map(item => ({
                     name:     `Gred ${(item.gred ?? '?').trim().toUpperCase()}`,

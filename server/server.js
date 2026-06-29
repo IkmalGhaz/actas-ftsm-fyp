@@ -74,11 +74,18 @@ app.post('/api/login', (req, res) => {
                         penentuRole = 'pegawai';
                     }
 
+                    let programsHandled = [];
+                    try {
+                        const raw = resultKakitangan[0].programs_handled;
+                        programsHandled = raw ? JSON.parse(raw) : [];
+                    } catch {}
+
                     const user = {
-                        no_matrik: resultKakitangan[0].id_ukmper,
-                        nama: resultKakitangan[0].nama,
-                        program: resultKakitangan[0].peranan,
-                        role: penentuRole
+                        no_matrik:        resultKakitangan[0].id_ukmper,
+                        nama:             resultKakitangan[0].nama,
+                        program:          resultKakitangan[0].judul_jawatan || resultKakitangan[0].peranan,
+                        role:             penentuRole,
+                        programs_handled: programsHandled,
                     };
                     return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKakitangan[0].peranan}!`, user });
                 }
@@ -185,6 +192,12 @@ app.post('/api/tambah-kursus', (req, res) => {
 // API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
 app.get('/api/kp/analitik-pelajar', (req, res) => {
     try {
+        let programList = [];
+        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+
+        const hasFilter = programList.length > 0;
+        const placeholders = programList.map(() => '?').join(', ');
+
         const sql = `
             SELECT
                 p.no_matrik, p.nama, p.program,
@@ -192,9 +205,10 @@ app.get('/api/kp/analitik-pelajar', (req, res) => {
             FROM pelajar p
             LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
             LEFT JOIN kursus k ON kp.kod_kursus = k.kod_kursus
+            ${hasFilter ? `WHERE p.program IN (${placeholders})` : ''}
         `;
 
-        db.query(sql, (err, results) => {
+        db.query(sql, programList, (err, results) => {
             if (err) {
                 console.error('❌ /api/kp/analitik-pelajar query error:', err.message);
                 return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan analitik pelajar.' });
@@ -251,21 +265,33 @@ app.get('/api/kp/analitik-pelajar', (req, res) => {
 // API Endpoint 5: Pantau Prestasi Mengikut Kursus (Untuk KP)
 app.get('/api/kp/pantau-kursus', (req, res) => {
     try {
-        const sql = `
-            SELECT
-                k.kod_kursus,
-                k.nama_kursus,
-                k.kategori,
-                k.jam_kredit,
-                COUNT(kp.no_matrik) AS jumlah_pelajar,
-                AVG(kp.mata_nilaian) AS purata_mata
+        let programList = [];
+        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+
+        const hasFilter = programList.length > 0;
+        const placeholders = programList.map(() => '?').join(', ');
+
+        const sql = hasFilter ? `
+            SELECT k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit,
+                   COUNT(DISTINCT kp.no_matrik) AS jumlah_pelajar,
+                   AVG(kp.mata_nilaian) AS purata_mata
+            FROM keputusan kp
+            JOIN kursus k ON kp.kod_kursus = k.kod_kursus
+            JOIN pelajar p ON kp.no_matrik = p.no_matrik
+            WHERE p.program IN (${placeholders})
+            GROUP BY k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit
+            ORDER BY purata_mata DESC
+        ` : `
+            SELECT k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit,
+                   COUNT(kp.no_matrik) AS jumlah_pelajar,
+                   AVG(kp.mata_nilaian) AS purata_mata
             FROM kursus k
             LEFT JOIN keputusan kp ON k.kod_kursus = kp.kod_kursus
             GROUP BY k.kod_kursus, k.nama_kursus, k.kategori, k.jam_kredit
             ORDER BY purata_mata DESC
         `;
 
-        db.query(sql, (err, results) => {
+        db.query(sql, programList, (err, results) => {
             if (err) {
                 console.error('❌ /api/kp/pantau-kursus query error:', err.message);
                 return res.status(500).json({ error: 'Ralat pangkalan data semasa memantau kursus.' });
@@ -287,26 +313,33 @@ app.get('/api/kp/pantau-kursus', (req, res) => {
 // API Endpoint 6: Analisis Taburan Gred Keseluruhan (Untuk KP)
 app.get('/api/kp/taburan-gred', (req, res) => {
     try {
-        const sql = `
+        let programList = [];
+        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+
+        const hasFilter = programList.length > 0;
+        const placeholders = programList.map(() => '?').join(', ');
+
+        const ORDER_CASE = `CASE gred
+                    WHEN 'A'  THEN 1 WHEN 'A-' THEN 2 WHEN 'B+' THEN 3
+                    WHEN 'B'  THEN 4 WHEN 'B-' THEN 5 WHEN 'C+' THEN 6
+                    WHEN 'C'  THEN 7 WHEN 'D'  THEN 8 WHEN 'E'  THEN 9
+                    ELSE 10 END`;
+
+        const sql = hasFilter ? `
+            SELECT kp.gred, COUNT(kp.no_matrik) as jumlah
+            FROM keputusan kp
+            JOIN pelajar p ON kp.no_matrik = p.no_matrik
+            WHERE p.program IN (${placeholders})
+            GROUP BY kp.gred
+            ORDER BY ${ORDER_CASE}
+        ` : `
             SELECT gred, COUNT(no_matrik) as jumlah
             FROM keputusan
             GROUP BY gred
-            ORDER BY
-                CASE gred
-                    WHEN 'A'  THEN 1
-                    WHEN 'A-' THEN 2
-                    WHEN 'B+' THEN 3
-                    WHEN 'B'  THEN 4
-                    WHEN 'B-' THEN 5
-                    WHEN 'C+' THEN 6
-                    WHEN 'C'  THEN 7
-                    WHEN 'D'  THEN 8
-                    WHEN 'E'  THEN 9
-                    ELSE 10
-                END
+            ORDER BY ${ORDER_CASE}
         `;
 
-        db.query(sql, (err, results) => {
+        db.query(sql, programList, (err, results) => {
             if (err) {
                 console.error('❌ /api/kp/taburan-gred query error:', err.message);
                 return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan taburan gred.' });
@@ -569,6 +602,16 @@ db.query(`ALTER TABLE pelajar ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err
 db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err) => {
     if (err && !err.message.includes('Duplicate column')) {
         console.error('Ralat tambah kolum email (kakitangan):', err.message);
+    }
+});
+db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS judul_jawatan VARCHAR(100)`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+        console.error('Ralat tambah kolum judul_jawatan:', err.message);
+    }
+});
+db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS programs_handled JSON`, (err) => {
+    if (err && !err.message.includes('Duplicate column')) {
+        console.error('Ralat tambah kolum programs_handled:', err.message);
     }
 });
 // Tambah kolum user_type ke jadual password_reset_tokens jika belum wujud

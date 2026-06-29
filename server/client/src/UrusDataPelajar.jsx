@@ -5,9 +5,14 @@ import { Users, Plus, Pencil, Trash2, X, Search, Eye, EyeOff, CheckCircle, Alert
 
 const PROGRAMS = [
     'Sains Komputer',
+    'Sains Komputer (Data Science)',
+    'Sains Komputer (Intelligent Machine)',
+    'Sains Komputer (Software Technology)',
+    'Sains Komputer (Network Technology)',
     'Teknologi Maklumat',
-    'Kejuruteraan Perisian Multimedia',
-    'Kejuruteraan Perisian Maklumat',
+    'Kejuruteraan Perisian',
+    'Kejuruteraan Perisian (Pembangunan Sistem Multimedia)',
+    'Kejuruteraan Perisian (Pembangunan Sistem Maklumat)',
 ];
 
 const DEFAULT_FORM = { no_matrik: '', nama: '', program: 'Sains Komputer', katalaluan: '123' };

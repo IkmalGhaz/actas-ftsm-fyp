@@ -153,7 +153,7 @@ export default function SidebarLayout({ children }) {
                         <div className="text-right">
                             <p className="text-sm font-bold text-gray-800 leading-tight">{user.nama}</p>
                             <p className="text-xs text-gray-500 font-medium">
-                                {isKP ? 'Ketua Program' : isPegawai ? 'Pegawai FTSM' : user.no_matrik}
+                                {isKP ? (user.program || 'Ketua Program') : isPegawai ? 'Pegawai FTSM' : user.no_matrik}
                             </p>
                         </div>
                         <div className="h-9 w-9 bg-[#002060] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm">

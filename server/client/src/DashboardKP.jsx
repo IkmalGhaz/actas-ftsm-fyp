@@ -40,7 +40,9 @@ function DashboardKP() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/analitik-pelajar')
+        axios.get('http://localhost:5000/api/kp/analitik-pelajar', {
+            params: { programs: JSON.stringify(user.programs_handled ?? []) }
+        })
             .then(res => setKpData(res.data))
             .catch(() => setError('Gagal memuat data analitik. Sila muat semula halaman.'))
             .finally(() => setLoading(false));

@@ -47,7 +47,9 @@ function MaklumBalasKP() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/analitik-pelajar')
+        axios.get('http://localhost:5000/api/kp/analitik-pelajar', {
+            params: { programs: JSON.stringify(user.programs_handled ?? []) }
+        })
             .then(res => setSenaraiPelajar(res.data.senarai_pelajar || []))
             .catch(() => setFetchError('Gagal memuat senarai pelajar. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
