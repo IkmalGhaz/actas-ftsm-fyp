@@ -595,36 +595,28 @@ app.post('/api/forgot-password', (req, res) => {
             return res.status(400).json({ success: false, message: 'E-mel dan No. Matrik diperlukan.' });
         }
 
-        // Cari dalam pelajar dahulu, kemudian kakitangan
-        db.query('SELECT * FROM pelajar WHERE no_matrik = ? AND email = ?', [no_matrik, email], (err, pelajarResults) => {
-            if (err) {
-                console.error('❌ /api/forgot-password pelajar query error:', err.message);
-                return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
-            }
+        const sendReset = (user, userType) => {
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-            const sendReset = (user, userType) => {
-                const token = crypto.randomBytes(32).toString('hex');
-                const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+            db.query('DELETE FROM password_reset_tokens WHERE no_matrik = ?', [no_matrik], (delErr) => {
+                if (delErr) console.error('Ralat padam token lama:', delErr.message);
 
-                db.query('DELETE FROM password_reset_tokens WHERE no_matrik = ?', [no_matrik], (delErr) => {
-                    if (delErr) console.error('Ralat padam token lama:', delErr.message);
+                db.query(
+                    'INSERT INTO password_reset_tokens (no_matrik, token, expires_at, user_type) VALUES (?, ?, ?, ?)',
+                    [no_matrik, token, expiresAt, userType],
+                    (insertErr) => {
+                        if (insertErr) {
+                            console.error('❌ /api/forgot-password insert token error:', insertErr.message);
+                            return res.status(500).json({ success: false, message: 'Ralat menyimpan token.' });
+                        }
 
-                    db.query(
-                        'INSERT INTO password_reset_tokens (no_matrik, token, expires_at, user_type) VALUES (?, ?, ?, ?)',
-                        [no_matrik, token, expiresAt, userType],
-                        (insertErr) => {
-                            if (insertErr) {
-                                console.error('❌ /api/forgot-password insert token error:', insertErr.message);
-                                return res.status(500).json({ success: false, message: 'Ralat menyimpan token.' });
-                            }
-
-                            const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-
-                            const mailOptions = {
-                                from: `"ACTAS-FTSM" <${process.env.EMAIL_USER}>`,
-                                to: email,
-                                subject: 'ACTAS-FTSM - Tetapkan Semula Kata Laluan',
-                                html: `
+                        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+                        const mailOptions = {
+                            from: `"ACTAS-FTSM" <${process.env.EMAIL_USER}>`,
+                            to: email,
+                            subject: 'ACTAS-FTSM - Tetapkan Semula Kata Laluan',
+                            html: `
 <!DOCTYPE html>
 <html lang="ms">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -632,18 +624,16 @@ app.post('/api/forgot-password', (req, res) => {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:40px 20px;">
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,48,130,0.10);">
-        <!-- Header -->
         <tr>
           <td style="background:#003082;padding:32px 40px;text-align:center;">
             <p style="margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:1px;">ACTAS-FTSM</p>
             <p style="margin:6px 0 0;font-size:12px;color:#a8c4ff;letter-spacing:2px;text-transform:uppercase;">Sistem Analisis Kredit Akademik</p>
           </td>
         </tr>
-        <!-- Body -->
         <tr>
           <td style="padding:40px;">
             <h2 style="margin:0 0 16px;font-size:20px;color:#003082;font-weight:700;">Tetapan Semula Kata Laluan</h2>
-            <p style="margin:0 0 12px;color:#374151;font-size:15px;">Salam, <strong>${pelajar.nama}</strong>,</p>
+            <p style="margin:0 0 12px;color:#374151;font-size:15px;">Salam, <strong>${user.nama}</strong>,</p>
             <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.7;">
               Kami menerima permintaan untuk menetapkan semula kata laluan akaun ACTAS-FTSM anda:
               <strong style="color:#003082;">${no_matrik}</strong>.
@@ -662,7 +652,6 @@ app.post('/api/forgot-password', (req, res) => {
             </p>
           </td>
         </tr>
-        <!-- Footer -->
         <tr>
           <td style="background:#f8faff;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
             <p style="margin:0;font-size:12px;color:#9ca3af;">
@@ -675,20 +664,44 @@ app.post('/api/forgot-password', (req, res) => {
   </table>
 </body>
 </html>`,
-                            };
+                        };
 
-                            mailer.sendMail(mailOptions, (mailErr) => {
-                                if (mailErr) {
-                                    console.error('❌ Gagal hantar e-mel:', mailErr.message);
-                                    return res.status(500).json({ success: false, message: 'Gagal menghantar e-mel. Sila cuba lagi.' });
-                                }
-                                res.status(200).json({ success: true, message: 'E-mel reset telah dihantar.' });
-                            });
-                        }
-                    );
-                });
+                        mailer.sendMail(mailOptions, (mailErr) => {
+                            if (mailErr) {
+                                console.error('❌ Gagal hantar e-mel:', mailErr.message);
+                                return res.status(500).json({ success: false, message: 'Gagal menghantar e-mel. Sila cuba lagi.' });
+                            }
+                            res.status(200).json({ success: true, message: 'E-mel reset telah dihantar.' });
+                        });
+                    }
+                );
+            });
+        };
+
+        // Cari dalam pelajar dahulu, kemudian kakitangan
+        db.query('SELECT * FROM pelajar WHERE no_matrik = ? AND email = ?', [no_matrik, email], (err, pelajarResults) => {
+            if (err) {
+                console.error('❌ /api/forgot-password pelajar query error:', err.message);
+                return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
             }
-        );
+
+            if (pelajarResults.length > 0) {
+                return sendReset(pelajarResults[0], 'pelajar');
+            }
+
+            db.query('SELECT * FROM kakitangan WHERE id_ukmper = ? AND email = ?', [no_matrik, email], (errKaki, kakiResults) => {
+                if (errKaki) {
+                    console.error('❌ /api/forgot-password kakitangan query error:', errKaki.message);
+                    return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
+                }
+
+                if (kakiResults.length > 0) {
+                    return sendReset(kakiResults[0], 'kakitangan');
+                }
+
+                return res.status(404).json({ success: false, message: 'Tiada akaun dijumpai dengan maklumat tersebut.' });
+            });
+        });
     } catch (e) {
         console.error('❌ Unexpected error in /api/forgot-password:', e.message);
         res.status(500).json({ success: false, message: 'Ralat tidak dijangka.' });
@@ -717,24 +730,23 @@ app.post('/api/reset-password', (req, res) => {
                     return res.status(400).json({ success: false, message: 'Token tidak sah atau tamat tempoh.' });
                 }
 
-                const { no_matrik } = results[0];
+                const { no_matrik, user_type } = results[0];
+                const updateSql = user_type === 'kakitangan'
+                    ? 'UPDATE kakitangan SET katalaluan = ? WHERE id_ukmper = ?'
+                    : 'UPDATE pelajar SET katalaluan = ? WHERE no_matrik = ?';
 
-                db.query(
-                    'UPDATE pelajar SET katalaluan = ? WHERE no_matrik = ?',
-                    [newPassword, no_matrik],
-                    (updateErr) => {
-                        if (updateErr) {
-                            console.error('❌ /api/reset-password update error:', updateErr.message);
-                            return res.status(500).json({ success: false, message: 'Ralat mengemaskini kata laluan.' });
-                        }
-
-                        db.query('DELETE FROM password_reset_tokens WHERE token = ?', [token], (delErr) => {
-                            if (delErr) console.error('Ralat padam token:', delErr.message);
-                        });
-
-                        res.status(200).json({ success: true, message: 'Kata laluan berjaya ditetapkan semula.' });
+                db.query(updateSql, [newPassword, no_matrik], (updateErr) => {
+                    if (updateErr) {
+                        console.error('❌ /api/reset-password update error:', updateErr.message);
+                        return res.status(500).json({ success: false, message: 'Ralat mengemaskini kata laluan.' });
                     }
-                );
+
+                    db.query('DELETE FROM password_reset_tokens WHERE token = ?', [token], (delErr) => {
+                        if (delErr) console.error('Ralat padam token:', delErr.message);
+                    });
+
+                    res.status(200).json({ success: true, message: 'Kata laluan berjaya ditetapkan semula.' });
+                });
             }
         );
     } catch (e) {
