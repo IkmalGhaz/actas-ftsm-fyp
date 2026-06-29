@@ -189,32 +189,19 @@ function Login() {
         }
     };
 
-    // SVG arc constants — 96 / 122 credits = 78.7%
-    const R            = 80;
-    const circumference = +(2 * Math.PI * R).toFixed(2);
-    const targetOffset  = +(circumference * (1 - 96 / 122)).toFixed(2);
-
     return (
         <>
             <style>{`
-                @keyframes drawArc {
-                    from { stroke-dashoffset: ${circumference}; }
-                    to   { stroke-dashoffset: ${targetOffset}; }
-                }
                 @keyframes loginFadeUp {
                     from { opacity: 0; transform: translateY(18px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
-                .lp-arc     { animation: drawArc 1.8s cubic-bezier(0.16,1,0.3,1) forwards; }
-                .lp-fade-1  { animation: loginFadeUp 0.65s ease forwards 0.1s; opacity: 0; }
-                .lp-fade-2  { animation: loginFadeUp 0.65s ease forwards 0.35s; opacity: 0; }
-                .lp-fade-3  { animation: loginFadeUp 0.65s ease forwards 0.6s; opacity: 0; }
-                .lp-fade-4  { animation: loginFadeUp 0.65s ease forwards 0.8s; opacity: 0; }
+                .lp-fade-1 { animation: loginFadeUp 0.65s ease forwards 0.1s; opacity: 0; }
+                .lp-fade-2 { animation: loginFadeUp 0.65s ease forwards 0.4s; opacity: 0; }
+                .lp-fade-3 { animation: loginFadeUp 0.65s ease forwards 0.65s; opacity: 0; }
+                .lp-fade-4 { animation: loginFadeUp 0.65s ease forwards 0.85s; opacity: 0; }
                 @media (prefers-reduced-motion: reduce) {
-                    .lp-arc, .lp-fade-1, .lp-fade-2, .lp-fade-3, .lp-fade-4 {
-                        animation: none; opacity: 1;
-                        stroke-dashoffset: ${targetOffset};
-                    }
+                    .lp-fade-1, .lp-fade-2, .lp-fade-3, .lp-fade-4 { animation: none; opacity: 1; }
                 }
             `}</style>
 
@@ -223,16 +210,18 @@ function Login() {
             <div className="flex min-h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
 
                 {/* ── LEFT PANEL ── */}
-                <div className="hidden lg:flex lg:w-[42%] flex-col justify-between p-12 relative overflow-hidden"
-                    style={{ background: '#002060' }}>
+                <div className="hidden lg:flex lg:w-[42%] flex-col justify-between p-12 relative overflow-hidden">
 
-                    {/* Decorative background rings */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-                        {[280, 380, 480, 580].map((sz, i) => (
-                            <div key={i} className="absolute rounded-full"
-                                style={{ width: sz, height: sz, border: '1px solid rgba(255,255,255,0.04)' }} />
-                        ))}
-                    </div>
+                    {/* FTSM photo */}
+                    <img
+                        src="https://live.staticflickr.com/7013/6490664311_e7ae335577_z.jpg"
+                        alt="Fakulti Teknologi dan Sains Maklumat, UKM"
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    {/* Gradient overlay — dark at bottom for text, lighter at top */}
+                    <div className="absolute inset-0"
+                        style={{ background: 'linear-gradient(to bottom, rgba(0,32,96,0.55) 0%, rgba(0,32,96,0.3) 40%, rgba(0,20,60,0.85) 100%)' }} />
 
                     {/* Top wordmark */}
                     <div className="lp-fade-1 relative z-10">
@@ -241,40 +230,12 @@ function Login() {
                         </span>
                     </div>
 
-                    {/* Centre — credit arc */}
-                    <div className="lp-fade-2 relative z-10 flex flex-col items-center gap-6">
-                        <svg viewBox="0 0 200 200" width="248" height="248" aria-label="96 daripada 122 kredit selesai">
-                            {/* Track */}
-                            <circle cx="100" cy="100" r={R} fill="none"
-                                stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
-                            {/* Gold progress arc */}
-                            <circle cx="100" cy="100" r={R} fill="none"
-                                stroke="#C9A227" strokeWidth="9" strokeLinecap="round"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={circumference}
-                                transform="rotate(-90 100 100)"
-                                className="lp-arc" />
-                            {/* Big number */}
-                            <text x="100" y="94" textAnchor="middle" fill="white"
-                                fontSize="48" fontFamily="'DM Serif Display', serif" fontWeight="400">
-                                96
-                            </text>
-                            {/* Gold label */}
-                            <text x="100" y="116" textAnchor="middle" fill="#C9A227"
-                                fontSize="11" fontFamily="'Inter', sans-serif" fontWeight="700" letterSpacing="3">
-                                KREDIT
-                            </text>
-                            {/* Muted target */}
-                            <text x="100" y="135" textAnchor="middle" fill="rgba(255,255,255,0.3)"
-                                fontSize="10" fontFamily="'Inter', sans-serif" fontWeight="400" letterSpacing="1">
-                                / 122 SASARAN
-                            </text>
-                        </svg>
-                    </div>
+                    {/* Spacer */}
+                    <div />
 
                     {/* Bottom — tagline */}
-                    <div className="lp-fade-3 relative z-10 space-y-3">
-                        <p style={{ fontFamily: "'DM Serif Display', serif", color: 'white', fontSize: 22, lineHeight: 1.4 }}>
+                    <div className="lp-fade-2 relative z-10 space-y-3">
+                        <p style={{ fontFamily: "'DM Serif Display', serif", color: 'white', fontSize: 24, lineHeight: 1.4 }}>
                             Pantau perjalanan<br />akademik anda.
                         </p>
                         <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
