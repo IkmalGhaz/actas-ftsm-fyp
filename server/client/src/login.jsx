@@ -239,7 +239,7 @@ function Login() {
                             Pantau perjalanan<br />akademik anda.
                         </p>
                         <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
-                            TEPAT &nbsp;·&nbsp; MASA NYATA &nbsp;·&nbsp; TERPERINCI
+                            TEPAT &nbsp;·&nbsp; EFISIEN &nbsp;·&nbsp; TERPERINCI
                         </p>
                     </div>
                 </div>
@@ -252,7 +252,7 @@ function Login() {
                         <div className="lp-fade-1">
                             <div className="flex items-center gap-4 mb-7">
                                 <img
-                                    src="https://upload.wikimedia.org/wikipedia/en/thumb/f/fa/UKM_logo.svg/1200px-UKM_logo.svg.png"
+                                    src="https://www.ukm.my/pkk/wp-content/uploads/download/ukmlogo/ms/LogoRasmiUKM.png"
                                     alt="UKM"
                                     className="h-10 object-contain"
                                 />
