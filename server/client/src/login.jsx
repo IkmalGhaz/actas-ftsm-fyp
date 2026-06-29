@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { X, Mail, KeyRound, CheckCircle2 } from 'lucide-react';
+import { X, Mail, KeyRound, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 function ForgotPasswordModal({ onClose }) {
     const [id, setId]         = useState('');
@@ -161,6 +161,7 @@ function Login() {
     const [katalaluan, setKatalaluan] = useState('');
     const [showForgot, setShowForgot] = useState(false);
     const [loginError, setLoginError] = useState('');
+    const [showPass,   setShowPass]   = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const resetSuccess = searchParams.get('reset') === 'success';
@@ -172,7 +173,6 @@ function Login() {
                 no_matrik: noMatrik,
                 katalaluan: katalaluan
             });
-
             if (response.status === 200) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
                 if (response.data.user.role === 'kp') {
@@ -190,101 +190,155 @@ function Login() {
 
     return (
         <>
+            <style>{`
+                @keyframes loginFadeUp {
+                    from { opacity: 0; transform: translateY(18px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .lp-fade-1 { animation: loginFadeUp 0.65s ease forwards 0.1s; opacity: 0; }
+                .lp-fade-2 { animation: loginFadeUp 0.65s ease forwards 0.4s; opacity: 0; }
+                .lp-fade-3 { animation: loginFadeUp 0.65s ease forwards 0.65s; opacity: 0; }
+                .lp-fade-4 { animation: loginFadeUp 0.65s ease forwards 0.85s; opacity: 0; }
+                @media (prefers-reduced-motion: reduce) {
+                    .lp-fade-1, .lp-fade-2, .lp-fade-3, .lp-fade-4 { animation: none; opacity: 1; }
+                }
+            `}</style>
+
             {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
-            <div className="flex min-h-screen bg-[#F0F7FF]">
-                {/* Left side — campus photos */}
-                <div className="hidden lg:flex lg:w-1/2 bg-gray-100 overflow-hidden relative border-r border-gray-200">
-                    <div className="w-full h-full grid grid-cols-2 grid-rows-3 gap-1 p-2 bg-gray-200">
-                        <img className="object-cover w-full h-full hover:scale-105 transition-transform duration-500" src="" alt="Campus 1" />
-                        <img className="object-cover w-full h-full hover:scale-105 transition-transform duration-500" src="https://ftsm.ukm.my/v6/public/assets/img/dmm.jpgy" />
-                        <img className="object-cover w-full h-full col-span-2 row-span-2 hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Campus 3" />
+            <div className="flex min-h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
+
+                {/* ── LEFT PANEL — FTSM photo ── */}
+                <div className="hidden lg:flex lg:w-[42%] flex-col justify-between p-12 relative overflow-hidden">
+
+                    {/* FTSM building photo (saved locally to avoid hotlink block) */}
+                    <img
+                        src="/ftsm.jpg"
+                        alt="Fakulti Teknologi dan Sains Maklumat, UKM"
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    {/* Gradient overlay — darker at top & bottom, lighter in middle */}
+                    <div className="absolute inset-0" style={{
+                        background: 'linear-gradient(to bottom, rgba(0,32,96,0.72) 0%, rgba(0,32,96,0.25) 45%, rgba(0,20,60,0.88) 100%)'
+                    }} />
+
+                    {/* Top wordmark */}
+                    <div className="lp-fade-1 relative z-10">
+                        <span style={{ color: '#C9A227', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em' }}>
+                            ACTAS · FTSM · UKM
+                        </span>
+                    </div>
+
+                    {/* Spacer pushes tagline to bottom */}
+                    <div />
+
+                    {/* Bottom tagline */}
+                    <div className="lp-fade-2 relative z-10 space-y-3">
+                        <p style={{ fontFamily: "'DM Serif Display', serif", color: 'white', fontSize: 24, lineHeight: 1.4 }}>
+                            Pantau perjalanan<br />akademik anda.
+                        </p>
+                        <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                            TEPAT &nbsp;·&nbsp; MASA NYATA &nbsp;·&nbsp; TERPERINCI
+                        </p>
                     </div>
                 </div>
 
-                {/* Right side — login form */}
-                <div className="flex w-full lg:w-1/2 items-center justify-center p-8">
-                    <div className="w-full max-w-[480px] p-10 space-y-8 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                {/* ── RIGHT PANEL — form ── */}
+                <div className="flex w-full lg:w-[58%] items-center justify-center p-8 bg-[#F5F7FF]">
+                    <div className="w-full max-w-[420px] space-y-8">
+
                         {/* Branding */}
-                        <div className="text-center flex flex-col items-center">
-                            <div className="flex space-x-6 mb-6 items-center justify-center">
+                        <div className="lp-fade-1">
+                            <div className="flex items-center gap-4 mb-7">
                                 <img
                                     src="https://upload.wikimedia.org/wikipedia/en/thumb/f/fa/UKM_logo.svg/1200px-UKM_logo.svg.png"
-                                    alt="UKM Logo"
-                                    className="h-16 object-contain"
+                                    alt="UKM"
+                                    className="h-10 object-contain"
                                 />
-                                <div className="h-16 w-px bg-gray-200" />
-                                <div className="text-left">
-                                    <p className="font-extrabold text-gray-800 text-xs tracking-wider uppercase leading-tight">
-                                        Fakulti<br />Teknologi Dan<br />Sains Maklumat
-                                    </p>
-                                </div>
+                                <div className="w-px h-8 bg-gray-200" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-snug">
+                                    Fakulti<br />Teknologi &amp;<br />Sains Maklumat
+                                </p>
                             </div>
-                            <img src="/logo.svg" alt="ACTAS-FTSM" className="h-12 mt-2" />
-                            <p className="mt-3 text-xl font-bold text-gray-700">Sistem Analisis Kredit Akademik</p>
+                            <h1 className="text-3xl font-extrabold text-[#002060] tracking-tight">Log Masuk</h1>
+                            <p className="text-gray-500 text-sm mt-1.5 font-medium">
+                                Masukkan maklumat akaun anda untuk meneruskan.
+                            </p>
                         </div>
 
-                        {/* Form */}
-                        <form className="mt-10 space-y-6" onSubmit={handleLogin}>
-                            {resetSuccess && (
-                                <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
-                                    <CheckCircle2 size={16} className="flex-shrink-0" />
-                                    Kata laluan berjaya ditetapkan semula. Sila log masuk.
-                                </div>
-                            )}
-                            {loginError && (
-                                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                                    {loginError}
-                                </div>
-                            )}
+                        {/* Alerts */}
+                        {resetSuccess && (
+                            <div className="lp-fade-2 flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
+                                <CheckCircle2 size={16} className="flex-shrink-0" />
+                                Kata laluan berjaya ditetapkan semula. Sila log masuk.
+                            </div>
+                        )}
+                        {loginError && (
+                            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                                {loginError}
+                            </div>
+                        )}
 
+                        {/* Form */}
+                        <form onSubmit={handleLogin} className="lp-fade-3 space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                                    Nombor Matrik / UKMPer / Pengenalan
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
+                                    No. Matrik / UKMPer
                                 </label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
-                                    placeholder="Cth: K012345 (KP/Pegawai) atau A012345 (Pelajar)"
+                                    placeholder="Cth: A21CS001"
                                     value={noMatrik}
                                     onChange={(e) => { setNoMatrik(e.target.value); setLoginError(''); }}
+                                    className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
                                     Kata Laluan
                                 </label>
-                                <input
-                                    type="password"
-                                    required
-                                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
-                                    placeholder="Masukkan Kata Laluan"
-                                    value={katalaluan}
-                                    onChange={(e) => { setKatalaluan(e.target.value); setLoginError(''); }}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPass ? 'text' : 'password'}
+                                        required
+                                        placeholder="Masukkan kata laluan"
+                                        value={katalaluan}
+                                        onChange={(e) => { setKatalaluan(e.target.value); setLoginError(''); }}
+                                        className="w-full px-4 pr-11 py-3.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        tabIndex={-1}
+                                        onClick={() => setShowPass(p => !p)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        aria-label={showPass ? 'Sembunyikan kata laluan' : 'Tunjukkan kata laluan'}
+                                    >
+                                        {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    className="w-full px-4 py-3.5 text-white font-bold bg-[#003082] rounded-xl hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-md active:scale-[0.98]"
-                                >
-                                    Log Masuk
-                                </button>
-                            </div>
-
-                            <div className="text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForgot(true)}
-                                    className="text-sm font-semibold text-blue-500 hover:text-blue-600 transition-colors"
-                                >
-                                    Lupa Kata Laluan?
-                                </button>
-                            </div>
+                            <button
+                                type="submit"
+                                className="w-full py-3.5 text-sm font-bold text-white rounded-xl bg-[#002060] hover:bg-[#003082] transition-colors shadow-md active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-[#002060]/20"
+                            >
+                                Log Masuk
+                            </button>
                         </form>
+
+                        <div className="lp-fade-4 text-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowForgot(true)}
+                                className="text-sm font-semibold text-[#003082] hover:text-[#C9A227] transition-colors"
+                            >
+                                Lupa Kata Laluan?
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             </div>
