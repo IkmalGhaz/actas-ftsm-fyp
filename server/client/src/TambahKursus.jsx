@@ -1,113 +1,154 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
-function TambahKursus() {
+const GRED_MATA = {
+    'A': 4.00, 'A-': 3.67, 'B+': 3.33, 'B': 3.00,
+    'B-': 2.67, 'C+': 2.33, 'C': 2.00, 'D': 1.00, 'E': 0.00,
+};
+
+const LABEL = 'text-[11px] font-bold text-gray-400 uppercase tracking-widest';
+const INPUT = 'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:border-[#002060] transition-all';
+
+export default function TambahKursus() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
 
-    // Pastikan nilai awal (state) sepadan dengan struktur borang
-    const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
-
     const [formData, setFormData] = useState({
-        kod_kursus: '',
-        nama_kursus: '',
-        jam_kredit: 3,
-        kategori: 'Wajib Fakulti',
-        gred: 'A',
-        semester_diambil: 1
+        kod_kursus:       '',
+        nama_kursus:      '',
+        jam_kredit:       3,
+        kategori:         'Wajib Fakulti',
+        gred:             'A',
+        semester_diambil: 1,
     });
 
-    // Perlindungan Keselamatan: Jika user tiada dalam sesi log masuk, tendang keluar
-    useEffect(() => {
-        if (!user) {
-            navigate('/');
-        }
-    }, [user, navigate]);
+    const [submitting,   setSubmitting]   = useState(false);
+    const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+    const [formError,    setFormError]    = useState('');
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    useEffect(() => {
+        if (!user) navigate('/');
+    }, []);
+
+    if (!user) return null;
+
+    const handleChange = e => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (formError) setFormError('');
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
+        if (!formData.kod_kursus.trim())  { setFormError('Kod kursus tidak boleh kosong.'); return; }
+        if (!formData.nama_kursus.trim()) { setFormError('Nama kursus tidak boleh kosong.'); return; }
 
-        // Tukar gred abjad kepada mata nilaian perpuluhan
-        const gredMata = { 
-            'A': 4.00, 'A-': 3.67, 'B+': 3.33, 'B': 3.00, 
-            'B-': 2.67, 'C+': 2.33, 'C': 2.00, 'D': 1.00, 'E': 0.00 
-        };
-        const mataNilaian = gredMata[formData.gred] || 0.00;
+        setFormError('');
+        setSubmitting(true);
+        setSubmitStatus(null);
 
         try {
             await axios.post('http://localhost:5000/api/tambah-kursus', {
-                no_matrik: user?.no_matrik,
-                mata_nilaian: mataNilaian,
-                ...formData
+                no_matrik:    user.no_matrik,
+                mata_nilaian: GRED_MATA[formData.gred] ?? 0,
+                ...formData,
+                kod_kursus: formData.kod_kursus.trim().toUpperCase(),
             });
             setSubmitStatus('success');
-            setTimeout(() => navigate('/dashboard'), 1500);
-        } catch (error) {
-            console.error(error);
+            setTimeout(() => navigate('/dashboard'), 1800);
+        } catch {
             setSubmitStatus('error');
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    // Jika user kosong, jangan render komponen untuk elak crash 'reading properties of null'
-    if (!user) return null;
-
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 font-sans">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Daftar Keputusan Baharu</h2>
-                    <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-gray-600">Batal</button>
-                </div>
+        <div className="max-w-2xl mx-auto space-y-6 pb-10">
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {submitStatus === 'success' && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
-                            <CheckCircle2 size={18} className="flex-shrink-0" />
-                            Keputusan berjaya direkodkan! Mengalih ke papan pemuka...
+            {/* ── BANNER ── */}
+            <div className="rounded-3xl overflow-hidden" style={{ background: '#002060' }}>
+                <div className="px-10 py-9 flex items-center justify-between gap-6">
+                    <div>
+                        <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                            REKOD KURSUS BAHARU
+                        </p>
+                        <h1 className="text-white font-extrabold tracking-tight mt-2" style={{ fontSize: 26 }}>
+                            Daftar Keputusan Kursus
+                        </h1>
+                        <p className="text-white/30 text-sm mt-1 font-medium">
+                            {user.nama} · {user.program ?? 'FTSM UKM'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="flex-shrink-0 text-white/40 hover:text-white/80 text-xs font-bold uppercase tracking-widest transition-colors"
+                    >
+                        ← Kembali
+                    </button>
+                </div>
+            </div>
+
+            {/* ── FORM CARD ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <form onSubmit={handleSubmit}>
+                    <div className="px-8 py-7 space-y-6">
+
+                        {/* Inline alerts */}
+                        {submitStatus === 'success' && (
+                            <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
+                                <CheckCircle2 size={16} className="flex-shrink-0" />
+                                Keputusan berjaya direkodkan! Mengalih ke papan pemuka...
+                            </div>
+                        )}
+                        {submitStatus === 'error' && (
+                            <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                                <XCircle size={16} className="flex-shrink-0" />
+                                Ralat pelayan semasa menyimpan. Sila cuba lagi.
+                            </div>
+                        )}
+                        {formError && (
+                            <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
+                                <AlertCircle size={13} className="flex-shrink-0" />
+                                {formError}
+                            </div>
+                        )}
+
+                        {/* Kod & Nama */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className={LABEL}>Kod Kursus</label>
+                                <input
+                                    type="text"
+                                    name="kod_kursus"
+                                    placeholder="Cth: TTTK2033"
+                                    className={`${INPUT} uppercase`}
+                                    value={formData.kod_kursus}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className={LABEL}>Nama Kursus</label>
+                                <input
+                                    type="text"
+                                    name="nama_kursus"
+                                    placeholder="Cth: Rangkaian Komputer"
+                                    className={INPUT}
+                                    value={formData.nama_kursus}
+                                    onChange={handleChange}
+                                />
+                            </div>
                         </div>
-                    )}
-                    {submitStatus === 'error' && (
-                        <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
-                            <XCircle size={18} className="flex-shrink-0" />
-                            Ralat pelayan semasa menyimpan. Sila cuba lagi.
-                        </div>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Kod Kursus</label>
-                            <input 
-                                type="text" 
-                                name="kod_kursus" 
-                                required 
-                                placeholder="Cth: TTTK2033" 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 uppercase" 
-                                value={formData.kod_kursus}
-                                onChange={handleChange} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Kursus</label>
-                            <input 
-                                type="text" 
-                                name="nama_kursus" 
-                                required 
-                                placeholder="Cth: Rangkaian Komputer" 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-                                value={formData.nama_kursus}
-                                onChange={handleChange} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+
+                        {/* Kategori */}
+                        <div className="space-y-1.5">
+                            <label className={LABEL}>Kategori Kursus</label>
                             <select
                                 name="kategori"
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className={INPUT}
                                 value={formData.kategori}
                                 onChange={handleChange}
                             >
@@ -118,60 +159,76 @@ function TambahKursus() {
                                 <option value="Lengkap Program">Lengkap Program</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Jam Kredit</label>
-                            <input 
-                                type="number" 
-                                name="jam_kredit" 
-                                min="1" 
-                                max="6" 
-                                required 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-                                value={formData.jam_kredit}
-                                onChange={handleChange} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Semester Diambil</label>
-                            <input 
-                                type="number" 
-                                name="semester_diambil" 
-                                min="1" 
-                                max="8" 
-                                required 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-                                value={formData.semester_diambil}
-                                onChange={handleChange} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Gred Diperoleh</label>
-                            <select 
-                                name="gred" 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-emerald-600" 
-                                value={formData.gred}
-                                onChange={handleChange}
-                            >
-                                <option value="A">A</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B">B</option>
-                                <option value="B-">B-</option>
-                                <option value="C+">C+</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                                <option value="E">E</option>
-                            </select>
+
+                        {/* Kredit, Semester, Gred — 3 col */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                            <div className="space-y-1.5">
+                                <label className={LABEL}>Jam Kredit</label>
+                                <select
+                                    name="jam_kredit"
+                                    className={INPUT}
+                                    value={formData.jam_kredit}
+                                    onChange={handleChange}
+                                >
+                                    {[1, 2, 3, 4, 5, 6].map(n => (
+                                        <option key={n} value={n}>{n} Kredit</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className={LABEL}>Semester Diambil</label>
+                                <select
+                                    name="semester_diambil"
+                                    className={INPUT}
+                                    value={formData.semester_diambil}
+                                    onChange={handleChange}
+                                >
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                                        <option key={n} value={n}>Semester {n}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className={LABEL}>Gred Diperoleh</label>
+                                <select
+                                    name="gred"
+                                    className={`${INPUT} font-bold`}
+                                    value={formData.gred}
+                                    onChange={handleChange}
+                                >
+                                    {Object.entries(GRED_MATA).map(([g, pts]) => (
+                                        <option key={g} value={g}>Gred {g} — {pts.toFixed(2)}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    
-                    <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-md">
-                        Simpan Keputusan
-                    </button>
+
+                    {/* Form footer */}
+                    <div className="px-8 py-5 bg-gray-50 border-t border-gray-100">
+                        <button
+                            type="submit"
+                            disabled={submitting || submitStatus === 'success'}
+                            className="w-full py-3.5 font-bold text-sm rounded-xl text-white transition-all active:scale-[0.98] hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            style={{ background: '#002060' }}
+                        >
+                            {submitting ? (
+                                <>
+                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                                    Menyimpan...
+                                </>
+                            ) : submitStatus === 'success' ? (
+                                <>
+                                    <CheckCircle2 size={16} />
+                                    Berjaya Disimpan
+                                </>
+                            ) : (
+                                'Simpan Keputusan'
+                            )}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     );
 }
-
-export default TambahKursus;

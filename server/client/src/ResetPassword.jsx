@@ -3,20 +3,22 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { KeyRound, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 
-function ResetPassword() {
+const INPUT = 'w-full px-4 pr-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all text-sm bg-gray-50';
+
+export default function ResetPassword() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const token = searchParams.get('token');
+    const navigate       = useNavigate();
+    const token          = searchParams.get('token');
 
-    const [newPassword, setNewPassword]     = useState('');
+    const [newPassword,     setNewPassword]     = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showNew, setShowNew]             = useState(false);
-    const [showConfirm, setShowConfirm]     = useState(false);
-    const [loading, setLoading]             = useState(false);
-    const [error, setError]                 = useState('');
-    const [success, setSuccess]             = useState(false);
+    const [showNew,         setShowNew]         = useState(false);
+    const [showConfirm,     setShowConfirm]     = useState(false);
+    const [loading,         setLoading]         = useState(false);
+    const [error,           setError]           = useState('');
+    const [success,         setSuccess]         = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
         setError('');
 
@@ -31,10 +33,7 @@ function ResetPassword() {
 
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/reset-password', {
-                token,
-                newPassword,
-            });
+            const response = await axios.post('http://localhost:5000/api/reset-password', { token, newPassword });
             if (response.data.success) {
                 setSuccess(true);
                 setTimeout(() => navigate('/?reset=success'), 2500);
@@ -48,55 +47,59 @@ function ResetPassword() {
         }
     };
 
+    /* ── Invalid / missing token ── */
     if (!token) {
         return (
-            <div className="min-h-screen bg-[#F0F7FF] flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
-                    <div className="flex justify-center mb-4">
-                        <div className="p-4 bg-red-50 rounded-full">
-                            <XCircle size={40} className="text-red-500" />
-                        </div>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="px-8 py-6" style={{ background: '#002060' }}>
+                        <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                            PORTAL ACTAS — FTSM UKM
+                        </p>
+                        <h2 className="text-base font-extrabold text-white mt-2">Pautan Tidak Sah</h2>
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900 mb-2">Pautan Tidak Sah</h2>
-                    <p className="text-sm text-gray-500 mb-6">
-                        Pautan tetapan semula kata laluan ini tidak sah atau telah tamat tempoh.
-                    </p>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="w-full py-3 text-sm font-bold text-white bg-[#003082] rounded-xl hover:bg-blue-800 transition-colors"
-                    >
-                        Kembali Log Masuk
-                    </button>
+                    <div className="px-8 py-8 flex flex-col items-center text-center gap-4">
+                        <XCircle size={40} className="text-red-400" />
+                        <p className="text-sm text-gray-500 leading-relaxed">
+                            Pautan tetapan semula kata laluan ini tidak sah atau telah tamat tempoh.
+                        </p>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="w-full py-3 text-sm font-bold text-white rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
+                            style={{ background: '#002060' }}
+                        >
+                            Kembali Log Masuk
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
+    /* ── Main form ── */
     return (
-        <div className="min-h-screen bg-[#F0F7FF] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                {/* Header */}
-                <div className="px-8 pt-8 pb-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 bg-blue-50 rounded-xl">
-                            <KeyRound size={20} className="text-[#003082]" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-extrabold text-gray-900">Tetapan Semula Kata Laluan</h2>
-                            <p className="text-xs text-gray-500 mt-0.5">Masukkan kata laluan baharu anda</p>
-                        </div>
+
+                {/* Navy header */}
+                <div className="px-8 py-6" style={{ background: '#002060' }}>
+                    <p style={{ color: '#C9A227', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em' }}>
+                        PORTAL ACTAS — FTSM UKM
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                        <KeyRound size={17} className="text-white/50 flex-shrink-0" />
+                        <h2 className="text-base font-extrabold text-white">Tetapan Semula Kata Laluan</h2>
                     </div>
+                    <p className="text-white/30 text-xs mt-1">Masukkan kata laluan baharu untuk akaun anda</p>
                 </div>
 
-                <div className="px-8 py-6">
+                <div className="px-8 py-7">
                     {success ? (
                         <div className="flex flex-col items-center text-center gap-4 py-4">
-                            <div className="p-4 bg-emerald-50 rounded-full">
-                                <CheckCircle2 size={40} className="text-emerald-500" />
-                            </div>
+                            <CheckCircle2 size={40} className="text-emerald-500" />
                             <div>
-                                <p className="font-bold text-gray-900 text-base">Kata Laluan Berjaya Ditetapkan!</p>
-                                <p className="text-sm text-gray-500 mt-2">
+                                <p className="font-bold text-gray-900">Kata Laluan Berjaya Ditetapkan!</p>
+                                <p className="text-sm text-gray-400 mt-2">
                                     Anda akan dihalakan ke halaman log masuk sebentar lagi...
                                 </p>
                             </div>
@@ -110,7 +113,7 @@ function ResetPassword() {
                             )}
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                                     Kata Laluan Baru
                                 </label>
                                 <div className="relative">
@@ -118,13 +121,13 @@ function ResetPassword() {
                                         type={showNew ? 'text' : 'password'}
                                         required
                                         value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        onChange={e => setNewPassword(e.target.value)}
                                         placeholder="Sekurang-kurangnya 6 aksara"
-                                        className="w-full px-4 pr-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
+                                        className={INPUT}
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowNew(!showNew)}
+                                        onClick={() => setShowNew(v => !v)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                         tabIndex={-1}
                                     >
@@ -134,7 +137,7 @@ function ResetPassword() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                                     Sahkan Kata Laluan
                                 </label>
                                 <div className="relative">
@@ -142,13 +145,13 @@ function ResetPassword() {
                                         type={showConfirm ? 'text' : 'password'}
                                         required
                                         value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        onChange={e => setConfirmPassword(e.target.value)}
                                         placeholder="Ulang kata laluan baharu"
-                                        className="w-full px-4 pr-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gray-50/50"
+                                        className={INPUT}
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowConfirm(!showConfirm)}
+                                        onClick={() => setShowConfirm(v => !v)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                         tabIndex={-1}
                                     >
@@ -160,7 +163,8 @@ function ResetPassword() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 text-sm font-bold text-white bg-[#003082] rounded-xl hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3.5 text-sm font-bold text-white rounded-xl transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                style={{ background: '#002060' }}
                             >
                                 {loading ? (
                                     <>
@@ -176,7 +180,8 @@ function ResetPassword() {
                                 <button
                                     type="button"
                                     onClick={() => navigate('/')}
-                                    className="font-semibold text-blue-500 hover:text-blue-600 transition-colors"
+                                    className="font-semibold hover:opacity-70 transition-opacity"
+                                    style={{ color: '#002060' }}
                                 >
                                     Kembali log masuk
                                 </button>
@@ -188,5 +193,3 @@ function ResetPassword() {
         </div>
     );
 }
-
-export default ResetPassword;
