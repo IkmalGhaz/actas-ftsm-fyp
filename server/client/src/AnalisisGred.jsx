@@ -88,7 +88,7 @@ function AnalisisGred() {
                                     ANALISIS TABURAN GRED — KETUA PROGRAM
                                 </p>
                                 <h1 className="text-white font-extrabold tracking-tight mt-2" style={{ fontSize: 28 }}>
-                                    Lengkung Prestasi Pelajar Fakulti
+                                    Taburan Gred Keseluruhan Pelajar Fakulti
                                 </h1>
                                 <p className="text-white/30 text-sm mt-1 font-medium">
                                     Gambaran keseluruhan pencapaian gred bagi semua kursus berdaftar.
