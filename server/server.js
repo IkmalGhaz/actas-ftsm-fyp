@@ -4,6 +4,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 
 const app = express();
 app.use(cors());
@@ -35,62 +36,56 @@ app.post('/api/login', (req, res) => {
             return res.status(400).json({ message: "ID Pengguna dan Kata Laluan diperlukan." });
         }
 
-        // 1. Cuba cari dalam jadual pelajar terlebih dahulu
-        const sqlPelajar = "SELECT * FROM pelajar WHERE no_matrik = ? AND katalaluan = ?";
-
-        db.query(sqlPelajar, [no_matrik, katalaluan], (err, resultPelajar) => {
+        db.query("SELECT * FROM pelajar WHERE no_matrik = ?", [no_matrik], async (err, resultPelajar) => {
             if (err) {
                 console.error('❌ Login query error (pelajar):', err.message);
                 return res.status(500).json({ error: 'Ralat pangkalan data. Sila cuba lagi.' });
             }
 
-            // Jika dijumpai dalam jadual pelajar
             if (resultPelajar.length > 0) {
+                try {
+                    const match = await bcrypt.compare(katalaluan, resultPelajar[0].katalaluan);
+                    if (!match) return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
+                } catch {
+                    return res.status(500).json({ error: 'Ralat semasa pengesahan kata laluan.' });
+                }
                 const user = {
                     no_matrik: resultPelajar[0].no_matrik,
-                    nama: resultPelajar[0].nama,
-                    program: resultPelajar[0].program,
-                    role: 'pelajar'
+                    nama:      resultPelajar[0].nama,
+                    program:   resultPelajar[0].program,
+                    role:      'pelajar'
                 };
                 return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user });
             }
 
-            // 2. Jika tidak jumpa dalam jadual pelajar, cari dalam jadual KAKITANGAN (UKMPer)
-            const sqlKakitangan = "SELECT * FROM kakitangan WHERE id_ukmper = ? AND katalaluan = ?";
-
-            db.query(sqlKakitangan, [no_matrik, katalaluan], (errKakitangan, resultKakitangan) => {
-                if (errKakitangan) {
-                    console.error('❌ Login query error (kakitangan):', errKakitangan.message);
+            db.query("SELECT * FROM kakitangan WHERE id_ukmper = ?", [no_matrik], async (errKaki, resultKaki) => {
+                if (errKaki) {
+                    console.error('❌ Login query error (kakitangan):', errKaki.message);
                     return res.status(500).json({ error: 'Ralat pangkalan data. Sila cuba lagi.' });
                 }
 
-                // Jika dijumpai dalam jadual kakitangan
-                if (resultKakitangan.length > 0) {
-                    let penentuRole = 'pegawai';
-
-                    if (resultKakitangan[0].peranan === 'Ketua Program') {
-                        penentuRole = 'kp';
-                    } else if (resultKakitangan[0].peranan === 'Pegawai FTSM') {
-                        penentuRole = 'pegawai';
+                if (resultKaki.length > 0) {
+                    try {
+                        const match = await bcrypt.compare(katalaluan, resultKaki[0].katalaluan);
+                        if (!match) return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
+                    } catch {
+                        return res.status(500).json({ error: 'Ralat semasa pengesahan kata laluan.' });
                     }
 
+                    const penentuRole = resultKaki[0].peranan === 'Ketua Program' ? 'kp' : 'pegawai';
                     let programsHandled = [];
-                    try {
-                        const raw = resultKakitangan[0].programs_handled;
-                        programsHandled = raw ? JSON.parse(raw) : [];
-                    } catch {}
+                    try { programsHandled = JSON.parse(resultKaki[0].programs_handled || '[]'); } catch {}
 
                     const user = {
-                        no_matrik:        resultKakitangan[0].id_ukmper,
-                        nama:             resultKakitangan[0].nama,
-                        program:          resultKakitangan[0].judul_jawatan || resultKakitangan[0].peranan,
+                        no_matrik:        resultKaki[0].id_ukmper,
+                        nama:             resultKaki[0].nama,
+                        program:          resultKaki[0].judul_jawatan || resultKaki[0].peranan,
                         role:             penentuRole,
                         programs_handled: programsHandled,
                     };
-                    return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKakitangan[0].peranan}!`, user });
+                    return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKaki[0].peranan}!`, user });
                 }
 
-                // 3. Jika kedua-dua jadual langsung tak jumpa data
                 return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
             });
         });
