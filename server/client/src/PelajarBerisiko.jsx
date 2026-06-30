@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AlertTriangle, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 function riskBadge(sebab) {
-    if (!sebab) return null;
+    if (!sebab || typeof sebab !== 'string') return null;
     return sebab.split(', ').map((label, i) => {
         const isCgpa   = label === 'CGPA Kritikal';
         const isKredit = label === 'Kredit Tertinggal';
@@ -14,7 +14,7 @@ function riskBadge(sebab) {
                 ? 'bg-amber-100 text-amber-700'
                 : 'bg-gray-100 text-gray-600';
         return (
-            <span key={i} className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide mr-1 ${cls}`}>
+            <span key={label} className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide mr-1 ${cls}`}>
                 {label}
             </span>
         );
@@ -23,7 +23,8 @@ function riskBadge(sebab) {
 
 function PelajarBerisiko() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem('user')); } catch {}
 
     const [data, setData]       = useState({ jumlah_berisiko: 0, senarai: [] });
     const [loading, setLoading] = useState(true);
@@ -129,7 +130,7 @@ function PelajarBerisiko() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 text-sm text-gray-700">
                                     {senarai.map((p, i) => (
-                                        <tr key={i} className="hover:bg-red-50/30 transition-colors">
+                                        <tr key={p.no_matrik} className="hover:bg-red-50/30 transition-colors">
                                             <td className="px-6 py-3.5 font-mono font-bold text-[#002060] text-xs">
                                                 {p.no_matrik}
                                             </td>
