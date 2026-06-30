@@ -498,7 +498,7 @@ app.get('/api/pegawai/pelajar', (req, res) => {
 });
 
 // CREATE: Tambah pelajar baharu
-app.post('/api/pegawai/pelajar', (req, res) => {
+app.post('/api/pegawai/pelajar', async (req, res) => {
     try {
         const { no_matrik, katalaluan, nama, program } = req.body;
 
@@ -506,8 +506,9 @@ app.post('/api/pegawai/pelajar', (req, res) => {
             return res.status(400).json({ error: 'Semua medan (no_matrik, katalaluan, nama, program) diperlukan.' });
         }
 
+        const hashedPassword = await bcrypt.hash(katalaluan, 10);
         const sql = "INSERT INTO pelajar (no_matrik, katalaluan, nama, program) VALUES (?, ?, ?, ?)";
-        db.query(sql, [no_matrik, katalaluan, nama, program], (err) => {
+        db.query(sql, [no_matrik, hashedPassword, nama, program], (err) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ error: `No Matrik '${no_matrik}' sudah wujud dalam sistem.` });
@@ -524,7 +525,7 @@ app.post('/api/pegawai/pelajar', (req, res) => {
 });
 
 // UPDATE: Kemas kini profil pelajar
-app.put('/api/pegawai/pelajar/:id', (req, res) => {
+app.put('/api/pegawai/pelajar/:id', async (req, res) => {
     try {
         const id = req.params.id;
         const { nama, program, katalaluan } = req.body;
@@ -533,8 +534,17 @@ app.put('/api/pegawai/pelajar/:id', (req, res) => {
             return res.status(400).json({ error: 'Medan nama dan program diperlukan.' });
         }
 
-        const sql = "UPDATE pelajar SET nama = ?, program = ?, katalaluan = ? WHERE no_matrik = ?";
-        db.query(sql, [nama, program, katalaluan, id], (err, result) => {
+        let sql, params;
+        if (katalaluan && katalaluan.trim()) {
+            const hashedPassword = await bcrypt.hash(katalaluan.trim(), 10);
+            sql    = "UPDATE pelajar SET nama = ?, program = ?, katalaluan = ? WHERE no_matrik = ?";
+            params = [nama, program, hashedPassword, id];
+        } else {
+            sql    = "UPDATE pelajar SET nama = ?, program = ? WHERE no_matrik = ?";
+            params = [nama, program, id];
+        }
+
+        db.query(sql, params, (err, result) => {
             if (err) {
                 console.error('❌ /api/pegawai/pelajar PUT error:', err.message);
                 return res.status(500).json({ error: 'Ralat pangkalan data semasa mengemas kini rekod pelajar.' });
@@ -759,7 +769,7 @@ app.post('/api/reset-password', (req, res) => {
         db.query(
             'SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > NOW()',
             [token],
-            (err, results) => {
+            async (err, results) => {
                 if (err) {
                     console.error('❌ /api/reset-password query error:', err.message);
                     return res.status(500).json({ success: false, message: 'Ralat pangkalan data.' });
@@ -770,11 +780,18 @@ app.post('/api/reset-password', (req, res) => {
                 }
 
                 const { no_matrik, user_type } = results[0];
+                let hashedPassword;
+                try {
+                    hashedPassword = await bcrypt.hash(newPassword, 10);
+                } catch {
+                    return res.status(500).json({ success: false, message: 'Ralat semasa memproses kata laluan.' });
+                }
+
                 const updateSql = user_type === 'kakitangan'
                     ? 'UPDATE kakitangan SET katalaluan = ? WHERE id_ukmper = ?'
                     : 'UPDATE pelajar SET katalaluan = ? WHERE no_matrik = ?';
 
-                db.query(updateSql, [newPassword, no_matrik], (updateErr) => {
+                db.query(updateSql, [hashedPassword, no_matrik], (updateErr) => {
                     if (updateErr) {
                         console.error('❌ /api/reset-password update error:', updateErr.message);
                         return res.status(500).json({ success: false, message: 'Ralat mengemaskini kata laluan.' });
