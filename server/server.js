@@ -348,6 +348,72 @@ app.get('/api/kp/taburan-gred', (req, res) => {
     }
 });
 
+// API Endpoint: Kesan Pelajar Berisiko (FR9)
+app.get('/api/kp/pelajar-berisiko', (req, res) => {
+    try {
+        let programList = [];
+        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+
+        const hasFilter = programList.length > 0;
+        const placeholders = programList.map(() => '?').join(', ');
+
+        const sql = `
+            SELECT
+                p.no_matrik,
+                p.nama,
+                p.program,
+                COALESCE(
+                    SUM(CASE WHEN kp.mata_nilaian IS NOT NULL THEN k.jam_kredit * kp.mata_nilaian ELSE 0 END)
+                    / NULLIF(SUM(CASE WHEN kp.mata_nilaian IS NOT NULL THEN k.jam_kredit ELSE 0 END), 0),
+                    0
+                ) AS cgpa,
+                COALESCE(SUM(k.jam_kredit), 0) AS kredit_terkumpul,
+                COALESCE(MAX(kp.semester_diambil), 0) AS semester_max
+            FROM pelajar p
+            LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
+            LEFT JOIN kursus k ON kp.kod_kursus = k.kod_kursus
+            ${hasFilter ? `WHERE p.program IN (${placeholders})` : ''}
+            GROUP BY p.no_matrik, p.nama, p.program
+            HAVING
+                (cgpa > 0 AND cgpa < 2.00)
+                OR (semester_max > 0 AND kredit_terkumpul < semester_max * 14)
+            ORDER BY cgpa ASC
+        `;
+
+        db.query(sql, programList, (err, results) => {
+            if (err) {
+                console.error('❌ /api/kp/pelajar-berisiko query error:', err.message);
+                return res.status(500).json({ error: 'Ralat pangkalan data semasa mendapatkan data pelajar berisiko.' });
+            }
+
+            const senarai = results.map(row => {
+                const cgpa = parseFloat(row.cgpa).toFixed(2);
+                const sebabRisiko = [];
+                if (parseFloat(cgpa) > 0 && parseFloat(cgpa) < 2.00) sebabRisiko.push('CGPA Kritikal');
+                if (row.semester_max > 0 && parseInt(row.kredit_terkumpul) < row.semester_max * 14) sebabRisiko.push('Kredit Tertinggal');
+                return {
+                    no_matrik:        row.no_matrik,
+                    nama:             row.nama,
+                    program:          row.program,
+                    cgpa,
+                    kredit_terkumpul: parseInt(row.kredit_terkumpul),
+                    semester_max:     row.semester_max,
+                    sebab_risiko:     sebabRisiko.join(', '),
+                };
+            });
+
+            res.status(200).json({
+                status: 'Berjaya',
+                jumlah_berisiko: senarai.length,
+                senarai,
+            });
+        });
+    } catch (e) {
+        console.error('❌ Unexpected error in /api/kp/pelajar-berisiko:', e.message);
+        res.status(500).json({ error: 'Ralat tidak dijangka.' });
+    }
+});
+
 // API Endpoint 7: Tarik Maklum Balas / Amaran Khusus untuk Pelajar Tertentu
 app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
     try {
