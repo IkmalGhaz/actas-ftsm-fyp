@@ -11,6 +11,7 @@ import DashboardKP from './DashboardKP';
 import PantauKursus from './PantauKursus';
 import AnalisisGred from './AnalisisGred';
 import MaklumBalasKP from './MaklumBalasKP';
+import PelajarBerisiko from './PelajarBerisiko';
 import JanaLaporan from './JanaLaporan';
 import UrusDataPelajar from './UrusDataPelajar';
 import KonfigurasiSistem from './KonfigurasiSistem';
@@ -45,6 +46,7 @@ function App() {
                     <Route path="/kp/pantau-kursus" element={<ProtectedRoute roles={['kp']}><PantauKursus /></ProtectedRoute>} />
                     <Route path="/kp/analisis-gred" element={<ProtectedRoute roles={['kp']}><AnalisisGred /></ProtectedRoute>} />
                     <Route path="/kp/maklum-balas" element={<ProtectedRoute roles={['kp']}><MaklumBalasKP /></ProtectedRoute>} />
+                    <Route path="/kp/pelajar-berisiko" element={<ProtectedRoute roles={['kp']}><PelajarBerisiko /></ProtectedRoute>} />
 
                     {/* Pegawai Routes */}
                     <Route path="/pegawai/jana-laporan" element={<ProtectedRoute roles={['pegawai']}><JanaLaporan /></ProtectedRoute>} />

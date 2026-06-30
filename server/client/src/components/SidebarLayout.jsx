@@ -10,7 +10,8 @@ import {
     MessageSquare,
     FileText,
     Users,
-    Settings
+    Settings,
+    AlertTriangle
 } from 'lucide-react';
 
 export default function SidebarLayout({ children }) {
@@ -37,7 +38,8 @@ export default function SidebarLayout({ children }) {
         { name: 'Papan Pemuka',   path: '/kp/dashboard',      icon: LayoutDashboard },
         { name: 'Pantau Kursus',  path: '/kp/pantau-kursus',  icon: MonitorPlay },
         { name: 'Analisis Gred',  path: '/kp/analisis-gred',  icon: BarChart3 },
-        { name: 'Maklum Balas',   path: '/kp/maklum-balas',   icon: MessageSquare },
+        { name: 'Maklum Balas',      path: '/kp/maklum-balas',      icon: MessageSquare },
+        { name: 'Pelajar Berisiko',  path: '/kp/pelajar-berisiko',  icon: AlertTriangle },
     ];
 
     const pegawaiNavItems = [

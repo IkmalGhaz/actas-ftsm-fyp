@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, MessageSquare, Search, ArrowUpDown, Download } from 'lucide-react';
+import { Users, MessageSquare, Search, ArrowUpDown, Download, AlertTriangle, ChevronRight } from 'lucide-react';
 
 function getThresholds() {
     try {
@@ -37,15 +37,22 @@ function DashboardKP() {
     const [search, setSearch]     = useState('');
     const [sortDir, setSortDir]   = useState('desc');
     const [csvError, setCsvError] = useState('');
+    const [risikoCount, setRisikoCount] = useState(0);
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
+        const programsParam = JSON.stringify(user.programs_handled ?? []);
         axios.get('http://localhost:5000/api/kp/analitik-pelajar', {
-            params: { programs: JSON.stringify(user.programs_handled ?? []) }
+            params: { programs: programsParam }
         })
             .then(res => setKpData(res.data))
             .catch(() => setError('Gagal memuat data analitik. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
+        axios.get('http://localhost:5000/api/kp/pelajar-berisiko', {
+            params: { programs: programsParam }
+        })
+            .then(res => setRisikoCount(res.data.jumlah_berisiko ?? 0))
+            .catch(() => {});
     }, []);
 
     if (!user) return null;
@@ -215,6 +222,32 @@ function DashboardKP() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* ── RISK ALERT CARD ── */}
+                    {risikoCount > 0 && (
+                        <div className="flex items-center justify-between gap-4 px-6 py-4 bg-red-50 border border-red-200 rounded-2xl">
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle size={20} className="text-red-600" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-bold text-red-800">
+                                        {risikoCount} pelajar berisiko dikesan
+                                    </p>
+                                    <p className="text-xs text-red-500 mt-0.5">
+                                        CGPA Kritikal (&lt;2.00) atau kredit tertinggal berbanding semester semasa
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => navigate('/kp/pelajar-berisiko')}
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex-shrink-0"
+                            >
+                                Lihat Senarai
+                                <ChevronRight size={12} />
+                            </button>
                         </div>
                     )}
 
