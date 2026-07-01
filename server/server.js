@@ -29,6 +29,27 @@ db.connect((err) => {
     console.log('✅ Berjaya sambung ke MySQL (actas_db)!');
 });
 
+// Menentukan skop program yang sah untuk endpoint analitik KP.
+// PENTING: sumber kebenaran ialah req.user.programs_handled (dari JWT yang disahkan oleh
+// verifyToken semasa log masuk) — BUKAN req.query.programs, kerana query string dihantar
+// oleh klien dan boleh dipalsukan (cth. devtools/Postman) tanpa melalui semakan pihak server.
+function resolveKpProgramScope(req) {
+    if (req.user.role === 'pegawai') {
+        // Pegawai FTSM: peranan fakulti-wide, sengaja dibenarkan nampak semua program.
+        return { hasFilter: false, programList: [], blocked: false };
+    }
+
+    const programList = Array.isArray(req.user.programs_handled) ? req.user.programs_handled : [];
+
+    if (programList.length === 0) {
+        // Fail-secure: KP tanpa programs_handled tidak patut nampak SEMUA data secara default.
+        console.warn(`⚠️ KP ${req.user.no_matrik} tiada programs_handled — akses disekat, tiada data dikembalikan.`);
+        return { hasFilter: true, programList: [], blocked: true };
+    }
+
+    return { hasFilter: true, programList, blocked: false };
+}
+
 // API Endpoint 1: Log Masuk Dinamik (Pelajar, KP, dan Pegawai)
 app.post('/api/login', (req, res) => {
     try {
@@ -80,8 +101,18 @@ app.post('/api/login', (req, res) => {
                     }
 
                     const penentuRole = resultKaki[0].peranan === 'Ketua Program' ? 'kp' : 'pegawai';
+                    const rawProgramsHandled = resultKaki[0].programs_handled;
                     let programsHandled = [];
-                    try { programsHandled = JSON.parse(resultKaki[0].programs_handled || '[]'); } catch {}
+                    if (Array.isArray(rawProgramsHandled)) {
+                        // mysql2 auto-parses JSON columns into JS arrays/objects already —
+                        // calling JSON.parse on that throws and was silently swallowed below.
+                        programsHandled = rawProgramsHandled;
+                    } else if (typeof rawProgramsHandled === 'string' && rawProgramsHandled.trim() !== '') {
+                        try {
+                            const parsed = JSON.parse(rawProgramsHandled);
+                            if (Array.isArray(parsed)) programsHandled = parsed;
+                        } catch {}
+                    }
 
                     const user = {
                         no_matrik:        resultKaki[0].id_ukmper,
@@ -199,10 +230,16 @@ app.post('/api/tambah-kursus', verifyToken, requireRole('pelajar'), (req, res) =
 // API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
 app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp', 'pegawai'), (req, res) => {
     try {
-        let programList = [];
-        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+        const { hasFilter, programList, blocked } = resolveKpProgramScope(req);
+        if (blocked) {
+            return res.status(200).json({
+                status: "Berjaya",
+                jumlah_pelajar: 0,
+                purata_cgpa_fakulti: "0.00",
+                senarai_pelajar: []
+            });
+        }
 
-        const hasFilter = programList.length > 0;
         const placeholders = programList.map(() => '?').join(', ');
 
         const sql = `
@@ -272,10 +309,11 @@ app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp', 'pegawai'), (
 // API Endpoint 5: Pantau Prestasi Mengikut Kursus (Untuk KP)
 app.get('/api/kp/pantau-kursus', verifyToken, requireRole('kp'), (req, res) => {
     try {
-        let programList = [];
-        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+        const { hasFilter, programList, blocked } = resolveKpProgramScope(req);
+        if (blocked) {
+            return res.status(200).json([]);
+        }
 
-        const hasFilter = programList.length > 0;
         const placeholders = programList.map(() => '?').join(', ');
 
         const sql = hasFilter ? `
@@ -320,10 +358,11 @@ app.get('/api/kp/pantau-kursus', verifyToken, requireRole('kp'), (req, res) => {
 // API Endpoint 6: Analisis Taburan Gred Keseluruhan (Untuk KP)
 app.get('/api/kp/taburan-gred', verifyToken, requireRole('kp'), (req, res) => {
     try {
-        let programList = [];
-        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+        const { hasFilter, programList, blocked } = resolveKpProgramScope(req);
+        if (blocked) {
+            return res.status(200).json([]);
+        }
 
-        const hasFilter = programList.length > 0;
         const placeholders = programList.map(() => '?').join(', ');
 
         const ORDER_CASE = `CASE gred
@@ -363,10 +402,15 @@ app.get('/api/kp/taburan-gred', verifyToken, requireRole('kp'), (req, res) => {
 // API Endpoint: Kesan Pelajar Berisiko (FR9)
 app.get('/api/kp/pelajar-berisiko', verifyToken, requireRole('kp'), (req, res) => {
     try {
-        let programList = [];
-        try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
+        const { hasFilter, programList, blocked } = resolveKpProgramScope(req);
+        if (blocked) {
+            return res.status(200).json({
+                status: 'Berjaya',
+                jumlah_berisiko: 0,
+                senarai: []
+            });
+        }
 
-        const hasFilter = programList.length > 0;
         const placeholders = programList.map(() => '?').join(', ');
 
         const sql = `
