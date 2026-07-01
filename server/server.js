@@ -108,7 +108,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // API Endpoint 2: Capaian Data Akademik & Kiraan Automatik
-app.get('/api/akademik/:no_matrik', (req, res) => {
+app.get('/api/akademik/:no_matrik', verifyToken, requireRole('pelajar'), verifyOwnership, (req, res) => {
     try {
         const noMatrik = req.params.no_matrik;
 
@@ -157,7 +157,7 @@ app.get('/api/akademik/:no_matrik', (req, res) => {
 });
 
 // API Endpoint 3: Tambah Kursus & Keputusan Baharu secara Dinamik
-app.post('/api/tambah-kursus', (req, res) => {
+app.post('/api/tambah-kursus', verifyToken, requireRole('pelajar'), (req, res) => {
     try {
         const { no_matrik, kod_kursus, nama_kursus, jam_kredit, kategori, gred, mata_nilaian, semester_diambil } = req.body;
 
@@ -197,7 +197,7 @@ app.post('/api/tambah-kursus', (req, res) => {
 // ===================================================================
 
 // API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
-app.get('/api/kp/analitik-pelajar', (req, res) => {
+app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp'), (req, res) => {
     try {
         let programList = [];
         try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
@@ -270,7 +270,7 @@ app.get('/api/kp/analitik-pelajar', (req, res) => {
 });
 
 // API Endpoint 5: Pantau Prestasi Mengikut Kursus (Untuk KP)
-app.get('/api/kp/pantau-kursus', (req, res) => {
+app.get('/api/kp/pantau-kursus', verifyToken, requireRole('kp'), (req, res) => {
     try {
         let programList = [];
         try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
@@ -318,7 +318,7 @@ app.get('/api/kp/pantau-kursus', (req, res) => {
 });
 
 // API Endpoint 6: Analisis Taburan Gred Keseluruhan (Untuk KP)
-app.get('/api/kp/taburan-gred', (req, res) => {
+app.get('/api/kp/taburan-gred', verifyToken, requireRole('kp'), (req, res) => {
     try {
         let programList = [];
         try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
@@ -361,7 +361,7 @@ app.get('/api/kp/taburan-gred', (req, res) => {
 });
 
 // API Endpoint: Kesan Pelajar Berisiko (FR9)
-app.get('/api/kp/pelajar-berisiko', (req, res) => {
+app.get('/api/kp/pelajar-berisiko', verifyToken, requireRole('kp'), (req, res) => {
     try {
         let programList = [];
         try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
@@ -427,7 +427,7 @@ app.get('/api/kp/pelajar-berisiko', (req, res) => {
 });
 
 // API Endpoint 7: Tarik Maklum Balas / Amaran Khusus untuk Pelajar Tertentu
-app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
+app.get('/api/pelajar/maklum-balas/:no_matrik', verifyToken, requireRole('pelajar'), verifyOwnership, (req, res) => {
     try {
         const noMatrik = req.params.no_matrik;
         const sql = "SELECT * FROM maklum_balas WHERE no_matrik = ? ORDER BY tarikh DESC";
@@ -465,7 +465,7 @@ db.query(sqlBinaPenilaian, (err) => {
 });
 
 // POST: Pelajar hantar penilaian kursus
-app.post('/api/pelajar/penilaian', (req, res) => {
+app.post('/api/pelajar/penilaian', verifyToken, requireRole('pelajar'), (req, res) => {
     try {
         const { no_matrik, kod_kursus, rating, komen } = req.body;
 
@@ -511,7 +511,7 @@ db.query(sqlBinaJadual, (err) => {
 });
 
 // PATCH: Tandai semua maklum balas pelajar sebagai dibaca
-app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', (req, res) => {
+app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', verifyToken, requireRole('pelajar'), verifyOwnership, (req, res) => {
     try {
         const noMatrik = req.params.no_matrik;
         const sql = "UPDATE maklum_balas SET status = 'Dibaca' WHERE no_matrik = ? AND status = 'Belum Dibaca'";
@@ -529,7 +529,7 @@ app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', (req, res) => {
 });
 
 // POST: KP hantar maklum balas kepada pelajar
-app.post('/api/kp/maklum-balas', (req, res) => {
+app.post('/api/kp/maklum-balas', verifyToken, requireRole('kp'), (req, res) => {
     try {
         const { no_matrik, mesej } = req.body;
 
@@ -560,7 +560,7 @@ app.post('/api/kp/maklum-balas', (req, res) => {
 // ===================================================================
 
 // READ: Tarik senarai semua pelajar
-app.get('/api/pegawai/pelajar', (req, res) => {
+app.get('/api/pegawai/pelajar', verifyToken, requireRole('pegawai'), (req, res) => {
     try {
         db.query("SELECT * FROM pelajar ORDER BY no_matrik ASC", (err, results) => {
             if (err) {
@@ -576,7 +576,7 @@ app.get('/api/pegawai/pelajar', (req, res) => {
 });
 
 // CREATE: Tambah pelajar baharu
-app.post('/api/pegawai/pelajar', async (req, res) => {
+app.post('/api/pegawai/pelajar', verifyToken, requireRole('pegawai'), async (req, res) => {
     try {
         const { no_matrik, katalaluan, nama, program } = req.body;
 
@@ -603,7 +603,7 @@ app.post('/api/pegawai/pelajar', async (req, res) => {
 });
 
 // UPDATE: Kemas kini profil pelajar
-app.put('/api/pegawai/pelajar/:id', async (req, res) => {
+app.put('/api/pegawai/pelajar/:id', verifyToken, requireRole('pegawai'), async (req, res) => {
     try {
         const id = req.params.id;
         const { nama, program, katalaluan } = req.body;
@@ -639,7 +639,7 @@ app.put('/api/pegawai/pelajar/:id', async (req, res) => {
 });
 
 // DELETE: Padam rekod pelajar
-app.delete('/api/pegawai/pelajar/:id', (req, res) => {
+app.delete('/api/pegawai/pelajar/:id', verifyToken, requireRole('pegawai'), (req, res) => {
     try {
         const id = req.params.id;
         const sql = "DELETE FROM pelajar WHERE no_matrik = ?";
