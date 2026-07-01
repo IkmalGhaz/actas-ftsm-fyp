@@ -367,7 +367,7 @@ app.get('/api/kp/pelajar-berisiko', (req, res) => {
                     / NULLIF(SUM(CASE WHEN kp.mata_nilaian IS NOT NULL THEN k.jam_kredit ELSE 0 END), 0),
                     0
                 ) AS cgpa,
-                COALESCE(SUM(k.jam_kredit), 0) AS kredit_terkumpul,
+                COALESCE(SUM(CASE WHEN kp.mata_nilaian IS NULL OR kp.mata_nilaian > 0 THEN k.jam_kredit ELSE 0 END), 0) AS kredit_terkumpul,
                 COALESCE(MAX(kp.semester_diambil), 0) AS semester_max
             FROM pelajar p
             LEFT JOIN keputusan kp ON p.no_matrik = kp.no_matrik
