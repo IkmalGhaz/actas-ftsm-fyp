@@ -5,6 +5,8 @@ const cors = require('cors');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { verifyToken, requireRole, verifyOwnership } = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
@@ -55,7 +57,12 @@ app.post('/api/login', (req, res) => {
                     program:   resultPelajar[0].program,
                     role:      'pelajar'
                 };
-                return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user });
+                const token = jwt.sign(
+                    { no_matrik: user.no_matrik, role: user.role, programs_handled: [] },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '8h' }
+                );
+                return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user, token });
             }
 
             db.query("SELECT * FROM kakitangan WHERE id_ukmper = ?", [no_matrik], async (errKaki, resultKaki) => {
@@ -83,7 +90,12 @@ app.post('/api/login', (req, res) => {
                         role:             penentuRole,
                         programs_handled: programsHandled,
                     };
-                    return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKaki[0].peranan}!`, user });
+                    const token = jwt.sign(
+                        { no_matrik: user.no_matrik, role: user.role, programs_handled: user.programs_handled },
+                        process.env.JWT_SECRET,
+                        { expiresIn: '8h' }
+                    );
+                    return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKaki[0].peranan}!`, user, token });
                 }
 
                 return res.status(401).json({ message: "ID Pengguna atau Kata Laluan salah!" });
