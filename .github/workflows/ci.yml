@@ -27,6 +27,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
       - name: Build
         run: npm run build
 
@@ -36,10 +40,33 @@ jobs:
           name: frontend-dist
           path: server/client/dist
 
+  build-backend:
+    name: Backend Install Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check server.js
+        run: node --check server.js
+
   build-docker:
     name: Docker Compose Build
     runs-on: ubuntu-latest
-    needs: build-frontend
+    needs: [build-frontend, build-backend]
 
     steps:
       - uses: actions/checkout@v4
