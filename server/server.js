@@ -121,8 +121,8 @@ app.get('/api/akademik/:no_matrik', verifyToken, requireRole('pelajar'), verifyO
                 kp.gred,
                 kp.mata_nilaian,
                 kp.semester_diambil
-            FROM Keputusan kp
-            JOIN Kursus k ON kp.kod_kursus = k.kod_kursus
+            FROM keputusan kp
+            JOIN kursus k ON kp.kod_kursus = k.kod_kursus
             WHERE kp.no_matrik = ?
             ORDER BY kp.semester_diambil ASC
         `;
@@ -677,33 +677,32 @@ db.query(`
     if (err) console.error('Ralat bina jadual password_reset_tokens:', err.message);
 });
 
+// "ADD COLUMN IF NOT EXISTS" adalah sintaks khusus MariaDB — MySQL standard (production)
+// tidak menyokongnya, jadi kita semak information_schema.COLUMNS dahulu sebelum ALTER TABLE.
+function addColumnIfMissing(table, column, definition) {
+    db.query(
+        `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [table, column],
+        (err, results) => {
+            if (err) {
+                console.error(`Ralat semak kolum ${column} (${table}):`, err.message);
+                return;
+            }
+            if (results[0].cnt > 0) return;
+            db.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`, (alterErr) => {
+                if (alterErr) console.error(`Ralat tambah kolum ${column} (${table}):`, alterErr.message);
+            });
+        }
+    );
+}
+
 // Tambah kolum email ke jadual pelajar dan kakitangan jika belum wujud
-db.query(`ALTER TABLE pelajar ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum email (pelajar):', err.message);
-    }
-});
-db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS email VARCHAR(100)`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum email (kakitangan):', err.message);
-    }
-});
-db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS judul_jawatan VARCHAR(100)`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum judul_jawatan:', err.message);
-    }
-});
-db.query(`ALTER TABLE kakitangan ADD COLUMN IF NOT EXISTS programs_handled JSON`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum programs_handled:', err.message);
-    }
-});
+addColumnIfMissing('pelajar', 'email', 'VARCHAR(100)');
+addColumnIfMissing('kakitangan', 'email', 'VARCHAR(100)');
+addColumnIfMissing('kakitangan', 'judul_jawatan', 'VARCHAR(100)');
+addColumnIfMissing('kakitangan', 'programs_handled', 'JSON');
 // Tambah kolum user_type ke jadual password_reset_tokens jika belum wujud
-db.query(`ALTER TABLE password_reset_tokens ADD COLUMN IF NOT EXISTS user_type VARCHAR(20) DEFAULT 'pelajar'`, (err) => {
-    if (err && !err.message.includes('Duplicate column')) {
-        console.error('Ralat tambah kolum user_type:', err.message);
-    }
-});
+addColumnIfMissing('password_reset_tokens', 'user_type', "VARCHAR(20) DEFAULT 'pelajar'");
 
 const mailer = nodemailer.createTransport({
     service: 'gmail',
