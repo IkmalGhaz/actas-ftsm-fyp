@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Bell, MessageSquare } from 'lucide-react';
 
@@ -82,14 +82,14 @@ function Dashboard() {
         const fetchAll = async () => {
             try {
                 const [resAkademik, resNotif] = await Promise.all([
-                    axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`),
-                    axios.get(`http://localhost:5000/api/pelajar/maklum-balas/${user.no_matrik}`)
+                    api.get(`/api/akademik/${user.no_matrik}`),
+                    api.get(`/api/pelajar/maklum-balas/${user.no_matrik}`)
                 ]);
                 setDataAkademik(resAkademik.data);
                 setNotifikasi(resNotif.data);
                 // Auto-mark all unread notifications as read
                 if (resNotif.data.some(n => n.status === 'Belum Dibaca')) {
-                    axios.patch(`http://localhost:5000/api/pelajar/maklum-balas/baca/${user.no_matrik}`)
+                    api.patch(`/api/pelajar/maklum-balas/baca/${user.no_matrik}`)
                         .catch(() => {});
                 }
             } catch (err) {

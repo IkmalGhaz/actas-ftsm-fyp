@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { MessageSquare, Send, AlertTriangle, Search, CheckCircle, X } from 'lucide-react';
 
 function getInitials(nama) {
@@ -47,7 +47,7 @@ function MaklumBalasKP() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/analitik-pelajar', {
+        api.get('/api/kp/analitik-pelajar', {
             params: { programs: JSON.stringify(user.programs_handled ?? []) }
         })
             .then(res => setSenaraiPelajar(res.data.senarai_pelajar || []))
@@ -71,7 +71,7 @@ function MaklumBalasKP() {
         setSendError('');
         setSubmitting(true);
         try {
-            await axios.post('http://localhost:5000/api/kp/maklum-balas', {
+            await api.post('/api/kp/maklum-balas', {
                 no_matrik: pelajarDipilih.no_matrik,
                 mesej,
             });

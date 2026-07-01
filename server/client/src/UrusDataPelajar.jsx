@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Users, Plus, Pencil, Trash2, X, Search, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 
 const PROGRAMS = [
@@ -59,7 +59,7 @@ function UrusDataPelajar() {
 
     const fetchPelajar = () => {
         setFetchError('');
-        return axios.get('http://localhost:5000/api/pegawai/pelajar')
+        return api.get('/api/pegawai/pelajar')
             .then(res => setSenaraiPelajar(res.data || []))
             .catch(() => setFetchError('Gagal memuat senarai pelajar. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
@@ -109,10 +109,10 @@ function UrusDataPelajar() {
         setSubmitting(true);
         try {
             if (isEditing) {
-                await axios.put(`http://localhost:5000/api/pegawai/pelajar/${formData.no_matrik}`, formData);
+                await api.put(`/api/pegawai/pelajar/${formData.no_matrik}`, formData);
                 showToast('success', `Rekod ${formData.nama} berjaya dikemas kini.`);
             } else {
-                await axios.post('http://localhost:5000/api/pegawai/pelajar', formData);
+                await api.post('/api/pegawai/pelajar', formData);
                 showToast('success', `Pelajar ${formData.nama} berjaya didaftarkan.`);
             }
             setIsModalOpen(false);
@@ -128,7 +128,7 @@ function UrusDataPelajar() {
         setDeleting(true);
         setDeleteError('');
         try {
-            await axios.delete(`http://localhost:5000/api/pegawai/pelajar/${no_matrik}`);
+            await api.delete(`/api/pegawai/pelajar/${no_matrik}`);
             setConfirmDelete(null);
             showToast('success', `Rekod ${no_matrik} berjaya dipadam.`);
             fetchPelajar();

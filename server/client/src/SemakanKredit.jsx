@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { ShieldCheck, Star, Globe, BookOpen, Layers } from 'lucide-react';
 
 // Sasaran kredit mengikut program — Buku Panduan FTSM 2023/2024
@@ -66,7 +66,7 @@ function SemakanKredit() {
     useEffect(() => {
         if (!user) { navigate('/'); return; }
 
-        axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`)
+        api.get(`/api/akademik/${user.no_matrik}`)
             .then(({ data }) => {
                 const subjekList = data.senarai_keputusan || [];
                 let wf = 0, cw = 0, citra = 0, wp = 0, lp = 0;

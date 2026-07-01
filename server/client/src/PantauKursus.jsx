@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { BookOpen, Search, AlertTriangle, CheckCircle, ArrowUpDown } from 'lucide-react';
 
 const STATUS_TIERS = [
@@ -29,7 +29,7 @@ function PantauKursus() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/pantau-kursus', {
+        api.get('/api/kp/pantau-kursus', {
             params: { programs: JSON.stringify(user.programs_handled ?? []) }
         })
             .then(res => setSenaraiKursus(res.data))

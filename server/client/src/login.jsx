@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { X, Mail, KeyRound, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
@@ -15,7 +15,7 @@ function ForgotPasswordModal({ onClose }) {
         setLoading(true);
         setError('');
         try {
-            const response = await axios.post('http://localhost:5000/api/forgot-password', {
+            const response = await api.post('/api/forgot-password', {
                 no_matrik: id,
                 email,
             });
@@ -169,11 +169,12 @@ function Login() {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/login', {
+            const response = await api.post('/api/login', {
                 no_matrik: noMatrik,
                 katalaluan: katalaluan
             });
             if (response.status === 200) {
+                localStorage.setItem('token', response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
                 if (response.data.user.role === 'kp') {
                     navigate('/kp/dashboard');

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 const GRED_MATA = {
@@ -50,7 +50,7 @@ export default function TambahKursus() {
         setSubmitStatus(null);
 
         try {
-            await axios.post('http://localhost:5000/api/tambah-kursus', {
+            await api.post('/api/tambah-kursus', {
                 no_matrik:    user.no_matrik,
                 mata_nilaian: GRED_MATA[formData.gred] ?? 0,
                 ...formData,

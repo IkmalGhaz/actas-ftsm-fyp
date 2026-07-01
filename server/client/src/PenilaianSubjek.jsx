@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Star, Send, BookOpen, MessageSquare, CheckCircle } from 'lucide-react';
 
 const RATING_LABEL = ['', 'Sangat Mengecewakan', 'Kurang Memuaskan', 'Sederhana Baik', 'Sangat Baik', 'Cemerlang!'];
@@ -24,7 +24,7 @@ function PenilaianSubjek() {
     useEffect(() => {
         if (!user || user.role !== 'pelajar') { navigate('/'); return; }
 
-        axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`)
+        api.get(`/api/akademik/${user.no_matrik}`)
             .then(res => setSenaraiSubjek(res.data.senarai_keputusan || []))
             .catch(() => setFetchError('Gagal memuat senarai kursus. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
@@ -43,7 +43,7 @@ function PenilaianSubjek() {
 
         setSubmitting(true);
         try {
-            await axios.post('http://localhost:5000/api/pelajar/penilaian', {
+            await api.post('/api/pelajar/penilaian', {
                 no_matrik: user.no_matrik,
                 kod_kursus: subjekDipilih,
                 rating,

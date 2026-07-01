@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Printer, Download, Filter, ChevronDown, FileText } from 'lucide-react';
 
 const KATEGORI_PILLS = ['Semua', 'Anugerah Dekan', 'Amaran Akademik'];
@@ -42,7 +42,7 @@ function JanaLaporan() {
 
     useEffect(() => {
         if (!user || user.role !== 'pegawai') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/analitik-pelajar')
+        api.get('/api/kp/analitik-pelajar')
             .then(res => setSenaraiPelajar(res.data.senarai_pelajar || []))
             .catch(() => setFetchError('Gagal memuat data pelajar. Sila muat semula halaman.'))
             .finally(() => setLoading(false));

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine
@@ -16,7 +16,7 @@ export default function CartaPrestasi() {
 
     useEffect(() => {
         if (!user) { navigate('/'); return; }
-        axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`)
+        api.get(`/api/akademik/${user.no_matrik}`)
             .then(res => setDataAkademik(res.data))
             .catch(() => setError('Gagal memuat data carta prestasi. Sila cuba semula.'))
             .finally(() => setLoading(false));

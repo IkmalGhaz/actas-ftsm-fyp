@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Calculator, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const GRED_MATA = {
@@ -43,7 +43,7 @@ export default function Simulator() {
 
     useEffect(() => {
         if (!user) { navigate('/'); return; }
-        axios.get(`http://localhost:5000/api/akademik/${user.no_matrik}`)
+        api.get(`/api/akademik/${user.no_matrik}`)
             .then(res => {
                 setCurrentCgpa(parseFloat(res.data.pngk_semasa) || 0);
                 setCurrentKredit(parseInt(res.data.jumlah_kredit) || 0);

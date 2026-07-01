@@ -22,6 +22,7 @@ export default function SidebarLayout({ children }) {
     const isPegawai = user.role === 'pegawai';
 
     const handleLogout = () => {
+        localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/');
     };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Users, MessageSquare, Search, ArrowUpDown, Download, AlertTriangle, ChevronRight } from 'lucide-react';
 
 function getThresholds() {
@@ -42,13 +42,13 @@ function DashboardKP() {
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
         const programsParam = JSON.stringify(user.programs_handled ?? []);
-        axios.get('http://localhost:5000/api/kp/analitik-pelajar', {
+        api.get('/api/kp/analitik-pelajar', {
             params: { programs: programsParam }
         })
             .then(res => setKpData(res.data))
             .catch(() => setError('Gagal memuat data analitik. Sila muat semula halaman.'))
             .finally(() => setLoading(false));
-        axios.get('http://localhost:5000/api/kp/pelajar-berisiko', {
+        api.get('/api/kp/pelajar-berisiko', {
             params: { programs: programsParam }
         })
             .then(res => setRisikoCount(res.data.jumlah_berisiko ?? 0))

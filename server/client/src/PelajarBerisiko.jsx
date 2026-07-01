@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { Users } from 'lucide-react';
 
 function riskBadge(sebab) {
@@ -32,7 +32,7 @@ function PelajarBerisiko() {
 
     useEffect(() => {
         if (!user || user.role !== 'kp') { navigate('/'); return; }
-        axios.get('http://localhost:5000/api/kp/pelajar-berisiko', {
+        api.get('/api/kp/pelajar-berisiko', {
             params: { programs: JSON.stringify(user.programs_handled ?? []) }
         })
             .then(res => setData(res.data))

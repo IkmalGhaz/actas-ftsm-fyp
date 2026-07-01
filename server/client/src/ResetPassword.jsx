@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import { KeyRound, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 
 const INPUT = 'w-full px-4 pr-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#002060]/20 focus:border-[#002060] transition-all text-sm bg-gray-50';
@@ -33,7 +33,7 @@ export default function ResetPassword() {
 
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/reset-password', { token, newPassword });
+            const response = await api.post('/api/reset-password', { token, newPassword });
             if (response.data.success) {
                 setSuccess(true);
                 setTimeout(() => navigate('/?reset=success'), 2500);
