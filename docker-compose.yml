@@ -35,12 +35,19 @@ services:
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
       DB_NAME: actas_db
       PORT: 5000
+      JWT_SECRET: ${JWT_SECRET:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      FRONTEND_URL: ${FRONTEND_URL:-}
     ports:
       - "5000:5000"
 
   # ── Frontend (React + nginx) ───────────────────────────────────────────────
   frontend:
-    build: ./server/client
+    build:
+      context: ./server/client
+      args:
+        VITE_API_URL: ""
     restart: unless-stopped
     depends_on:
       - backend
