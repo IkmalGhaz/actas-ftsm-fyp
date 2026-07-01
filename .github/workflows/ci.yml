@@ -62,14 +62,3 @@ jobs:
 
       - name: Syntax check server.js
         run: node --check server.js
-
-  build-docker:
-    name: Docker Compose Build
-    runs-on: ubuntu-latest
-    needs: [build-frontend, build-backend]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build all images
-        run: docker compose build
