@@ -129,7 +129,7 @@ function PelajarBerisiko() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50 text-sm text-gray-700">
-                                    {senarai.map((p, i) => (
+                                    {senarai.map((p) => (
                                         <tr key={p.no_matrik} className="hover:bg-red-50/30 transition-colors">
                                             <td className="px-6 py-3.5 font-mono font-bold text-[#002060] text-xs">
                                                 {p.no_matrik}
@@ -149,7 +149,13 @@ function PelajarBerisiko() {
                                                 {p.semester_max}
                                             </td>
                                             <td className="px-4 py-3.5 text-center">
-                                                <span className="px-2.5 py-1 rounded-md font-extrabold text-xs inline-block min-w-[46px] text-center bg-red-100 text-red-700">
+                                                <span className={`px-2.5 py-1 rounded-md font-extrabold text-xs inline-block min-w-[46px] text-center ${
+                                                    parseFloat(p.cgpa) < 2.00
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : parseFloat(p.cgpa) < 3.00
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : 'bg-blue-100 text-blue-700'
+                                                }`}>
                                                     {p.cgpa}
                                                 </span>
                                             </td>

@@ -222,7 +222,7 @@ app.get('/api/kp/analitik-pelajar', (req, res) => {
                     };
                 }
 
-                if (row.jam_kredit && row.mata_nilaian) {
+                if (row.jam_kredit !== null && row.mata_nilaian !== null) {
                     pelajarMap[row.no_matrik].totalMata += (parseFloat(row.mata_nilaian) * parseInt(row.jam_kredit));
                     pelajarMap[row.no_matrik].totalKredit += parseInt(row.jam_kredit);
                 }
