@@ -197,7 +197,7 @@ app.post('/api/tambah-kursus', verifyToken, requireRole('pelajar'), (req, res) =
 // ===================================================================
 
 // API Endpoint 4: Tarik Semua Data Pelajar & Analitik Fakulti
-app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp'), (req, res) => {
+app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp', 'pegawai'), (req, res) => {
     try {
         let programList = [];
         try { programList = JSON.parse(req.query.programs || '[]'); } catch {}
