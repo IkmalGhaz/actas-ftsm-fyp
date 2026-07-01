@@ -1,6 +1,6 @@
-# JWT Authentication Implementation Plan
+﻿# JWT Authentication Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Secure all ACTAS-FTSM backend endpoints with JWT-based authentication, replacing the current scheme where any caller (including Postman without login) can hit protected endpoints freely.
 
@@ -10,15 +10,15 @@
 
 ## Global Constraints
 
-- JWT library: `jsonwebtoken` (npm) — no `jose`, no `jwt-simple`
+- JWT library: `jsonwebtoken` (npm) â€” no `jose`, no `jwt-simple`
 - Token expiry: exactly `'8h'` (string literal passed to `expiresIn`)
 - JWT payload fields: `{ no_matrik, role, programs_handled }` (programs_handled is `[]` for pelajar, the array for kp/pegawai)
 - JWT_SECRET env var name: exactly `JWT_SECRET`
 - localStorage key for token: exactly `'token'`; user object key remains `'user'` (unchanged)
 - Centralized axios instance export: default export from `server/client/src/api.js`
 - Public endpoints (NO middleware): `/api/login`, `/api/forgot-password`, `/api/reset-password`
-- No refresh token, no Redis, no token rotation — single access token only
-- Do NOT remove any existing response fields from `/api/login` — only ADD the `token` field
+- No refresh token, no Redis, no token rotation â€” single access token only
+- Do NOT remove any existing response fields from `/api/login` â€” only ADD the `token` field
 - Ownership check: pelajar endpoints with `:no_matrik` URL param must verify `req.user.no_matrik === req.params.no_matrik`
 - Working directory for server commands: `C:\xampp2\htdocs\actas-ftsm\actas-ftsm-fyp\server`
 
@@ -27,18 +27,18 @@
 ## File Map
 
 **Create:**
-- `server/middleware/auth.js` — `verifyToken`, `requireRole`, `verifyOwnership` Express middlewares
-- `server/client/src/api.js` — centralized axios instance with auth interceptors
+- `server/middleware/auth.js` â€” `verifyToken`, `requireRole`, `verifyOwnership` Express middlewares
+- `server/client/src/api.js` â€” centralized axios instance with auth interceptors
 
 **Modify:**
-- `server/package.json` — add `jsonwebtoken` dependency
-- `server/.env` — add `JWT_SECRET` with generated value
-- `server/.env.example` — add `JWT_SECRET=` placeholder (create file if missing)
-- `server/server.js` — require jwt + middleware, update `/api/login`, apply middleware to 15 endpoints
-- `server/client/src/login.jsx` — save `token` to localStorage after login
-- `server/client/src/components/SidebarLayout.jsx` — remove `'token'` on logout
+- `server/package.json` â€” add `jsonwebtoken` dependency
+- `server/.env` â€” add `JWT_SECRET` with generated value
+- `server/.env.example` â€” add `JWT_SECRET=` placeholder (create file if missing)
+- `server/server.js` â€” require jwt + middleware, update `/api/login`, apply middleware to 15 endpoints
+- `server/client/src/login.jsx` â€” save `token` to localStorage after login
+- `server/client/src/components/SidebarLayout.jsx` â€” remove `'token'` on logout
 - `server/client/src/api.js` (created above, then imported by components)
-- 14 components: `AnalisisGred`, `CartaPrestasi`, `dashboard`, `DashboardKP`, `JanaLaporan`, `MaklumBalasKP`, `PantauKursus`, `PelajarBerisiko`, `PenilaianSubjek`, `ResetPassword`, `SemakanKredit`, `Simulator`, `TambahKursus`, `UrusDataPelajar` — swap `import axios from 'axios'` → `import api from './api'`, replace `axios.` → `api.`, strip `http://localhost:5000` prefix from all URLs
+- 14 components: `AnalisisGred`, `CartaPrestasi`, `dashboard`, `DashboardKP`, `JanaLaporan`, `MaklumBalasKP`, `PantauKursus`, `PelajarBerisiko`, `PenilaianSubjek`, `ResetPassword`, `SemakanKredit`, `Simulator`, `TambahKursus`, `UrusDataPelajar` â€” swap `import axios from 'axios'` â†’ `import api from './api'`, replace `axios.` â†’ `api.`, strip `http://localhost:5000` prefix from all URLs
 
 ---
 
@@ -52,7 +52,7 @@
 **Interfaces:**
 - Produces: `JWT_SECRET` env var available to `process.env.JWT_SECRET` in all subsequent tasks
 
-- [ ] **Step 1: Install jsonwebtoken**
+- [x] **Step 1: Install jsonwebtoken**
 
 From `C:\xampp2\htdocs\actas-ftsm\actas-ftsm-fyp\server`:
 
@@ -62,7 +62,7 @@ npm install jsonwebtoken
 
 Expected: package-lock.json updated, `"jsonwebtoken"` appears in `package.json` dependencies.
 
-- [ ] **Step 2: Add JWT_SECRET to .env**
+- [x] **Step 2: Add JWT_SECRET to .env**
 
 Read current `server/.env`. It contains:
 ```
@@ -84,7 +84,7 @@ JWT_SECRET=a294a47714ce67e78ba42c6316c0139d7bbaf25a124e444047c03f13f045d9abcf7c3
 
 (This value was pre-generated with `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`. The user will replace it for production.)
 
-- [ ] **Step 3: Create .env.example**
+- [x] **Step 3: Create .env.example**
 
 Create `server/.env.example` with placeholder values (this file is safe to commit, no real secrets):
 
@@ -102,22 +102,22 @@ FRONTEND_URL=http://localhost:5173
 JWT_SECRET=
 ```
 
-- [ ] **Step 4: Verify server still starts**
+- [x] **Step 4: Verify server still starts**
 
 ```bash
 node server.js
 ```
 
-Expected output includes `✅ Berjaya sambung ke MySQL (actas_db)!` and no crash. Press Ctrl+C.
+Expected output includes `âœ… Berjaya sambung ke MySQL (actas_db)!` and no crash. Press Ctrl+C.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json package-lock.json .env.example
 git commit -m "feat: install jsonwebtoken and add JWT_SECRET to env"
 ```
 
-> Note: Do NOT `git add .env` — it is gitignored (contains real secrets).
+> Note: Do NOT `git add .env` â€” it is gitignored (contains real secrets).
 
 ---
 
@@ -125,17 +125,17 @@ git commit -m "feat: install jsonwebtoken and add JWT_SECRET to env"
 
 **Files:**
 - Create: `server/middleware/auth.js`
-- Modify: `server/server.js` (lines 1–8 for require, lines ~52–58 and ~79–87 for /api/login)
+- Modify: `server/server.js` (lines 1â€“8 for require, lines ~52â€“58 and ~79â€“87 for /api/login)
 
 **Interfaces:**
 - Consumes: `process.env.JWT_SECRET` from Task 1
 - Produces:
-  - `verifyToken(req, res, next)` — Express middleware, attaches verified payload to `req.user`
-  - `requireRole(...roles)` — factory returning Express middleware, checks `req.user.role`
-  - `verifyOwnership(req, res, next)` — Express middleware, checks `req.user.no_matrik === req.params.no_matrik`
+  - `verifyToken(req, res, next)` â€” Express middleware, attaches verified payload to `req.user`
+  - `requireRole(...roles)` â€” factory returning Express middleware, checks `req.user.role`
+  - `verifyOwnership(req, res, next)` â€” Express middleware, checks `req.user.no_matrik === req.params.no_matrik`
   - `/api/login` response now includes `token` field alongside existing `user` and `message` fields
 
-- [ ] **Step 1: Create server/middleware/auth.js**
+- [x] **Step 1: Create server/middleware/auth.js**
 
 Create the file `server/middleware/auth.js`:
 
@@ -172,9 +172,9 @@ const verifyOwnership = (req, res, next) => {
 module.exports = { verifyToken, requireRole, verifyOwnership };
 ```
 
-- [ ] **Step 2: Add requires at the top of server.js**
+- [x] **Step 2: Add requires at the top of server.js**
 
-Read `server/server.js`. The current top section (lines 1–8) looks like:
+Read `server/server.js`. The current top section (lines 1â€“8) looks like:
 
 ```javascript
 require('dotenv').config();
@@ -200,9 +200,9 @@ const jwt = require('jsonwebtoken');
 const { verifyToken, requireRole, verifyOwnership } = require('./middleware/auth');
 ```
 
-- [ ] **Step 3: Update /api/login to sign and return JWT — pelajar branch**
+- [x] **Step 3: Update /api/login to sign and return JWT â€” pelajar branch**
 
-In `/api/login`, find the pelajar success block. Current code (around line 52–58):
+In `/api/login`, find the pelajar success block. Current code (around line 52â€“58):
 
 ```javascript
                 const user = {
@@ -231,9 +231,9 @@ Replace with:
                 return res.status(200).json({ message: "Log Masuk Berjaya sebagai Pelajar!", user, token });
 ```
 
-- [ ] **Step 4: Update /api/login to sign and return JWT — kakitangan branch**
+- [x] **Step 4: Update /api/login to sign and return JWT â€” kakitangan branch**
 
-Find the kakitangan success block. Current code (around line 79–86):
+Find the kakitangan success block. Current code (around line 79â€“86):
 
 ```javascript
                     const user = {
@@ -264,14 +264,14 @@ Replace with:
                     return res.status(200).json({ message: `Log Masuk Berjaya sebagai ${resultKaki[0].peranan}!`, user, token });
 ```
 
-- [ ] **Step 5: Verify server starts and /api/login returns token**
+- [x] **Step 5: Verify server starts and /api/login returns token**
 
 Start server:
 ```bash
 node server.js
 ```
 
-In a separate terminal, test login (use an existing pelajar ID from DB — e.g., A21ST001 or whichever exists, with their plain-text password before bcrypt... no, all passwords are already hashed. Use a known demo account):
+In a separate terminal, test login (use an existing pelajar ID from DB â€” e.g., A21ST001 or whichever exists, with their plain-text password before bcrypt... no, all passwords are already hashed. Use a known demo account):
 
 ```bash
 curl -s -X POST http://localhost:5000/api/login \
@@ -285,7 +285,7 @@ Expected: `token present: true` and `user present: true`.
 
 Stop server (Ctrl+C).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add middleware/auth.js server.js
@@ -314,14 +314,14 @@ app.get('/api/some-endpoint', (req, res) => {
 app.get('/api/some-endpoint', verifyToken, requireRole('kp'), (req, res) => {
 ```
 
-- [ ] **Step 1: Apply middleware to all 15 endpoints**
+- [x] **Step 1: Apply middleware to all 15 endpoints**
 
-Read `server/server.js`. Make the following changes — one per endpoint. Each change is ONLY the function signature line (do not touch the handler body):
+Read `server/server.js`. Make the following changes â€” one per endpoint. Each change is ONLY the function signature line (do not touch the handler body):
 
 **Pelajar endpoints (3 with ownership check, 2 without):**
 
 ```javascript
-// Line ~99 — GET /api/akademik/:no_matrik
+// Line ~99 â€” GET /api/akademik/:no_matrik
 // BEFORE:
 app.get('/api/akademik/:no_matrik', (req, res) => {
 // AFTER:
@@ -329,7 +329,7 @@ app.get('/api/akademik/:no_matrik', verifyToken, requireRole('pelajar'), verifyO
 ```
 
 ```javascript
-// Line ~148 — POST /api/tambah-kursus
+// Line ~148 â€” POST /api/tambah-kursus
 // BEFORE:
 app.post('/api/tambah-kursus', (req, res) => {
 // AFTER:
@@ -337,7 +337,7 @@ app.post('/api/tambah-kursus', verifyToken, requireRole('pelajar'), (req, res) =
 ```
 
 ```javascript
-// Line ~418 — GET /api/pelajar/maklum-balas/:no_matrik
+// Line ~418 â€” GET /api/pelajar/maklum-balas/:no_matrik
 // BEFORE:
 app.get('/api/pelajar/maklum-balas/:no_matrik', (req, res) => {
 // AFTER:
@@ -345,7 +345,7 @@ app.get('/api/pelajar/maklum-balas/:no_matrik', verifyToken, requireRole('pelaja
 ```
 
 ```javascript
-// Line ~456 — POST /api/pelajar/penilaian
+// Line ~456 â€” POST /api/pelajar/penilaian
 // BEFORE:
 app.post('/api/pelajar/penilaian', (req, res) => {
 // AFTER:
@@ -353,7 +353,7 @@ app.post('/api/pelajar/penilaian', verifyToken, requireRole('pelajar'), (req, re
 ```
 
 ```javascript
-// Line ~502 — PATCH /api/pelajar/maklum-balas/baca/:no_matrik
+// Line ~502 â€” PATCH /api/pelajar/maklum-balas/baca/:no_matrik
 // BEFORE:
 app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', (req, res) => {
 // AFTER:
@@ -363,7 +363,7 @@ app.patch('/api/pelajar/maklum-balas/baca/:no_matrik', verifyToken, requireRole(
 **KP endpoints (5 total):**
 
 ```javascript
-// Line ~188 — GET /api/kp/analitik-pelajar
+// Line ~188 â€” GET /api/kp/analitik-pelajar
 // BEFORE:
 app.get('/api/kp/analitik-pelajar', (req, res) => {
 // AFTER:
@@ -371,7 +371,7 @@ app.get('/api/kp/analitik-pelajar', verifyToken, requireRole('kp'), (req, res) =
 ```
 
 ```javascript
-// Line ~261 — GET /api/kp/pantau-kursus
+// Line ~261 â€” GET /api/kp/pantau-kursus
 // BEFORE:
 app.get('/api/kp/pantau-kursus', (req, res) => {
 // AFTER:
@@ -379,7 +379,7 @@ app.get('/api/kp/pantau-kursus', verifyToken, requireRole('kp'), (req, res) => {
 ```
 
 ```javascript
-// Line ~309 — GET /api/kp/taburan-gred
+// Line ~309 â€” GET /api/kp/taburan-gred
 // BEFORE:
 app.get('/api/kp/taburan-gred', (req, res) => {
 // AFTER:
@@ -387,7 +387,7 @@ app.get('/api/kp/taburan-gred', verifyToken, requireRole('kp'), (req, res) => {
 ```
 
 ```javascript
-// Line ~352 — GET /api/kp/pelajar-berisiko
+// Line ~352 â€” GET /api/kp/pelajar-berisiko
 // BEFORE:
 app.get('/api/kp/pelajar-berisiko', (req, res) => {
 // AFTER:
@@ -395,7 +395,7 @@ app.get('/api/kp/pelajar-berisiko', verifyToken, requireRole('kp'), (req, res) =
 ```
 
 ```javascript
-// Line ~520 — POST /api/kp/maklum-balas
+// Line ~520 â€” POST /api/kp/maklum-balas
 // BEFORE:
 app.post('/api/kp/maklum-balas', (req, res) => {
 // AFTER:
@@ -405,7 +405,7 @@ app.post('/api/kp/maklum-balas', verifyToken, requireRole('kp'), (req, res) => {
 **Pegawai endpoints (4 total):**
 
 ```javascript
-// Line ~551 — GET /api/pegawai/pelajar
+// Line ~551 â€” GET /api/pegawai/pelajar
 // BEFORE:
 app.get('/api/pegawai/pelajar', (req, res) => {
 // AFTER:
@@ -413,7 +413,7 @@ app.get('/api/pegawai/pelajar', verifyToken, requireRole('pegawai'), (req, res) 
 ```
 
 ```javascript
-// Line ~567 — POST /api/pegawai/pelajar
+// Line ~567 â€” POST /api/pegawai/pelajar
 // BEFORE:
 app.post('/api/pegawai/pelajar', async (req, res) => {
 // AFTER:
@@ -421,7 +421,7 @@ app.post('/api/pegawai/pelajar', verifyToken, requireRole('pegawai'), async (req
 ```
 
 ```javascript
-// Line ~594 — PUT /api/pegawai/pelajar/:id
+// Line ~594 â€” PUT /api/pegawai/pelajar/:id
 // BEFORE:
 app.put('/api/pegawai/pelajar/:id', async (req, res) => {
 // AFTER:
@@ -429,16 +429,16 @@ app.put('/api/pegawai/pelajar/:id', verifyToken, requireRole('pegawai'), async (
 ```
 
 ```javascript
-// Line ~630 — DELETE /api/pegawai/pelajar/:id
+// Line ~630 â€” DELETE /api/pegawai/pelajar/:id
 // BEFORE:
 app.delete('/api/pegawai/pelajar/:id', (req, res) => {
 // AFTER:
 app.delete('/api/pegawai/pelajar/:id', verifyToken, requireRole('pegawai'), (req, res) => {
 ```
 
-> Endpoints NOT touched (public — no middleware): `POST /api/login` (line ~31), `POST /api/forgot-password` (line ~705), `POST /api/reset-password` (line ~827).
+> Endpoints NOT touched (public â€” no middleware): `POST /api/login` (line ~31), `POST /api/forgot-password` (line ~705), `POST /api/reset-password` (line ~827).
 
-- [ ] **Step 2: Verify — unauthenticated request returns 401**
+- [x] **Step 2: Verify â€” unauthenticated request returns 401**
 
 Start server:
 ```bash
@@ -458,7 +458,7 @@ TOKEN=$(curl -s -X POST http://localhost:5000/api/login \
   -H "Content-Type: application/json" \
   -d "{\"no_matrik\":\"A21ST001\",\"katalaluan\":\"password123\"}" | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).token));")
 
-# Try KP endpoint with pelajar token — should get 403
+# Try KP endpoint with pelajar token â€” should get 403
 curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $TOKEN" \
   http://localhost:5000/api/kp/analitik-pelajar
@@ -471,11 +471,11 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/login \
   -H "Content-Type: application/json" \
   -d "{\"no_matrik\":\"BADID\",\"katalaluan\":\"BADPASS\"}"
 ```
-Expected: `401` (from bcrypt compare, not from verifyToken — login endpoint is public)
+Expected: `401` (from bcrypt compare, not from verifyToken â€” login endpoint is public)
 
 Stop server (Ctrl+C).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add server.js
@@ -484,7 +484,7 @@ git commit -m "feat: apply JWT verifyToken + requireRole middleware to all 15 pr
 
 ---
 
-## Task 4: Frontend — centralized axios instance + token save + component migration
+## Task 4: Frontend â€” centralized axios instance + token save + component migration
 
 **Files:**
 - Create: `server/client/src/api.js`
@@ -496,7 +496,7 @@ git commit -m "feat: apply JWT verifyToken + requireRole middleware to all 15 pr
 - Consumes: `token` in `localStorage` (key `'token'`), `JWT_SECRET` on backend
 - Produces: All API calls include `Authorization: Bearer <token>` header; 401 response auto-logouts user
 
-- [ ] **Step 1: Create server/client/src/api.js**
+- [x] **Step 1: Create server/client/src/api.js**
 
 ```javascript
 import axios from 'axios';
@@ -528,7 +528,7 @@ api.interceptors.response.use(
 export default api;
 ```
 
-- [ ] **Step 2: Update login.jsx — save token + use api instance**
+- [x] **Step 2: Update login.jsx â€” save token + use api instance**
 
 Read `server/client/src/login.jsx`.
 
@@ -569,7 +569,7 @@ import api from './api';
             const response = await api.post('/api/forgot-password', {
 ```
 
-- [ ] **Step 3: Update SidebarLayout.jsx — clear token on logout**
+- [x] **Step 3: Update SidebarLayout.jsx â€” clear token on logout**
 
 Read `server/client/src/components/SidebarLayout.jsx`.
 
@@ -586,45 +586,45 @@ Replace with:
         navigate('/');
 ```
 
-- [ ] **Step 4: Migrate all remaining 14 components**
+- [x] **Step 4: Migrate all remaining 14 components**
 
 For each of these files, make two types of changes:
-1. **Import swap:** `import axios from 'axios';` → `import api from './api';`
-2. **Call swap:** Every `axios.get(`, `axios.post(`, `axios.put(`, `axios.patch(`, `axios.delete(` → same with `api.` prefix, AND strip `http://localhost:5000` from the URL string (keep the `/api/...` part).
+1. **Import swap:** `import axios from 'axios';` â†’ `import api from './api';`
+2. **Call swap:** Every `axios.get(`, `axios.post(`, `axios.put(`, `axios.patch(`, `axios.delete(` â†’ same with `api.` prefix, AND strip `http://localhost:5000` from the URL string (keep the `/api/...` part).
 
 Files to update (all in `server/client/src/`):
 
-**AnalisisGred.jsx** — swap import + replace all axios calls (calls `/api/kp/taburan-gred`)
+**AnalisisGred.jsx** â€” swap import + replace all axios calls (calls `/api/kp/taburan-gred`)
 
-**CartaPrestasi.jsx** — swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
+**CartaPrestasi.jsx** â€” swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
 
-**dashboard.jsx** — swap import + replace all axios calls (calls `/api/akademik/:no_matrik` and `/api/pelajar/maklum-balas/:no_matrik` and `/api/pelajar/maklum-balas/baca/:no_matrik`)
+**dashboard.jsx** â€” swap import + replace all axios calls (calls `/api/akademik/:no_matrik` and `/api/pelajar/maklum-balas/:no_matrik` and `/api/pelajar/maklum-balas/baca/:no_matrik`)
 
-**DashboardKP.jsx** — swap import + replace all axios calls (calls `/api/kp/analitik-pelajar`, `/api/kp/pelajar-berisiko`)
+**DashboardKP.jsx** â€” swap import + replace all axios calls (calls `/api/kp/analitik-pelajar`, `/api/kp/pelajar-berisiko`)
 
-**JanaLaporan.jsx** — swap import + replace all axios calls
+**JanaLaporan.jsx** â€” swap import + replace all axios calls
 
-**MaklumBalasKP.jsx** — swap import + replace all axios calls (calls `/api/kp/maklum-balas`)
+**MaklumBalasKP.jsx** â€” swap import + replace all axios calls (calls `/api/kp/maklum-balas`)
 
-**PantauKursus.jsx** — swap import + replace all axios calls (calls `/api/kp/pantau-kursus`)
+**PantauKursus.jsx** â€” swap import + replace all axios calls (calls `/api/kp/pantau-kursus`)
 
-**PelajarBerisiko.jsx** — swap import + replace all axios calls (calls `/api/kp/pelajar-berisiko`)
+**PelajarBerisiko.jsx** â€” swap import + replace all axios calls (calls `/api/kp/pelajar-berisiko`)
 
-**PenilaianSubjek.jsx** — swap import + replace all axios calls (calls `/api/pelajar/penilaian`)
+**PenilaianSubjek.jsx** â€” swap import + replace all axios calls (calls `/api/pelajar/penilaian`)
 
-**ResetPassword.jsx** — swap import + replace all axios calls (calls `/api/reset-password`)
+**ResetPassword.jsx** â€” swap import + replace all axios calls (calls `/api/reset-password`)
 
-**SemakanKredit.jsx** — swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
+**SemakanKredit.jsx** â€” swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
 
-**Simulator.jsx** — swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
+**Simulator.jsx** â€” swap import + replace all axios calls (calls `/api/akademik/:no_matrik`)
 
-**TambahKursus.jsx** — swap import + replace all axios calls (calls `/api/tambah-kursus`)
+**TambahKursus.jsx** â€” swap import + replace all axios calls (calls `/api/tambah-kursus`)
 
-**UrusDataPelajar.jsx** — swap import + replace all axios calls (calls `/api/pegawai/pelajar`)
+**UrusDataPelajar.jsx** â€” swap import + replace all axios calls (calls `/api/pegawai/pelajar`)
 
-> If any file does not actually contain `import axios from 'axios'` when you read it, skip it — the grep scan may have had a stale match.
+> If any file does not actually contain `import axios from 'axios'` when you read it, skip it â€” the grep scan may have had a stale match.
 
-- [ ] **Step 5: Verify frontend works end-to-end**
+- [x] **Step 5: Verify frontend works end-to-end**
 
 Start backend:
 ```bash
@@ -640,16 +640,16 @@ npm run dev
 
 Open browser to `http://localhost:5173`. Then:
 1. Log in with a known pelajar account
-2. Open DevTools → Application → Local Storage → verify `token` key exists (starts with `eyJ`)
-3. Open DevTools → Network tab → click any page (e.g., Dashboard)
-4. Inspect the API request → Headers → verify `Authorization: Bearer eyJ...` header is present
-5. Log out → verify `token` is removed from localStorage
-6. Log in as KP account → navigate to Pelajar Berisiko page → verify data loads
-7. Log in as pelajar → manually visit `http://localhost:5173/kp/dashboard` → should redirect to `/` (ProtectedRoute guard in App.jsx)
+2. Open DevTools â†’ Application â†’ Local Storage â†’ verify `token` key exists (starts with `eyJ`)
+3. Open DevTools â†’ Network tab â†’ click any page (e.g., Dashboard)
+4. Inspect the API request â†’ Headers â†’ verify `Authorization: Bearer eyJ...` header is present
+5. Log out â†’ verify `token` is removed from localStorage
+6. Log in as KP account â†’ navigate to Pelajar Berisiko page â†’ verify data loads
+7. Log in as pelajar â†’ manually visit `http://localhost:5173/kp/dashboard` â†’ should redirect to `/` (ProtectedRoute guard in App.jsx)
 
 Stop both servers.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add client/src/api.js client/src/login.jsx client/src/components/SidebarLayout.jsx \
